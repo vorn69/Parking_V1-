@@ -123,7 +123,7 @@ public class BookingDAO extends BaseDAO<Booking> {
         """;
 
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+            PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setObject(1, b.getCustomerId(), Types.INTEGER);
             ps.setInt(2, b.getVehicleId());
