@@ -1,12 +1,11 @@
 package ui;
 
+import dao.VehicleOwnerDAO;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-import java.util.List;
-import java.util.ArrayList;
-
-import dao.VehicleOwnerDAO;
 import models.VehicleOwner;
 
 public class VehicleOwnerPanel extends JPanel {
