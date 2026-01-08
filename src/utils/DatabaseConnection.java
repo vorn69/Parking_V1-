@@ -23,6 +23,7 @@ public class DatabaseConnection {
         try {
             // Load PostgreSQL JDBC Driver
             Class.forName("org.postgresql.Driver");
+            System.err.println("Make sure postgresql-42.7.8.jar is in classpath");
             System.out.println("PostgreSQL JDBC Driver Registered!");
         } catch (ClassNotFoundException e) {
             System.err.println("Failed to register PostgreSQL JDBC Driver!");

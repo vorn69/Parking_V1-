@@ -1,4 +1,3 @@
-// src/dao/BookingDAO.java
 package dao;
 
 import java.sql.*;
@@ -31,6 +30,7 @@ public class BookingDAO extends BaseDAO<Booking> {
         b.setRemarks(rs.getString("remarks"));
         b.setUserId((Integer) rs.getObject("user_id"));
 
+        // FIXED: Use Timestamp directly
         b.setBookingTime(rs.getTimestamp("booking_time"));
         b.setExpectedArrival(rs.getTimestamp("expected_arrival"));
         b.setActualArrival(rs.getTimestamp("actual_arrival"));
@@ -39,19 +39,20 @@ public class BookingDAO extends BaseDAO<Booking> {
         b.setTotalHours((Double) rs.getObject("total_hours"));
         b.setTotalAmount((Double) rs.getObject("total_amount"));
 
+        b.setBookingRef(rs.getString("booking_ref"));
+
         return b;
     }
 
     /* ================= CREATE ================= */
-
     public Integer create(Booking b) throws SQLException {
         String sql = """
             INSERT INTO inet_vehicleparking.tbl_booking
             (customer_id, vehicle_id, duration_of_booking, slot_id,
-             booking_status, remarks, user_id, booking_time,
-             expected_arrival, actual_arrival, departure_time,
-             total_hours, total_amount)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            booking_status, remarks, user_id, booking_time,
+            expected_arrival, actual_arrival, departure_time,
+            total_hours, total_amount, booking_ref)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
         try (Connection conn = getConnection();
@@ -65,15 +66,15 @@ public class BookingDAO extends BaseDAO<Booking> {
             ps.setString(6, b.getRemarks());
             ps.setObject(7, b.getUserId(), Types.INTEGER);
 
-            ps.setTimestamp(8, b.getBookingTime() != null
-                    ? b.getBookingTime()
-                    : new Timestamp(System.currentTimeMillis()));
+            // Convert java.util.Date to Timestamp for PreparedStatement
+            ps.setTimestamp(8, b.getBookingTime() != null ? new Timestamp(b.getBookingTime().getTime()) : new Timestamp(System.currentTimeMillis()));
+            ps.setTimestamp(9, b.getExpectedArrival() != null ? new Timestamp(b.getExpectedArrival().getTime()) : null);
+            ps.setTimestamp(10, b.getActualArrival() != null ? new Timestamp(b.getActualArrival().getTime()) : null);
+            ps.setTimestamp(11, b.getDepartureTime() != null ? new Timestamp(b.getDepartureTime().getTime()) : null);
 
-            ps.setTimestamp(9, b.getExpectedArrival());
-            ps.setTimestamp(10, b.getActualArrival());
-            ps.setTimestamp(11, b.getDepartureTime());
             ps.setObject(12, b.getTotalHours(), Types.DOUBLE);
             ps.setObject(13, b.getTotalAmount(), Types.DOUBLE);
+            ps.setString(14, b.getBookingRef());
 
             ps.executeUpdate();
 
@@ -83,7 +84,6 @@ public class BookingDAO extends BaseDAO<Booking> {
     }
 
     /* ================= READ ================= */
-
     public Booking findById(Integer id) throws SQLException {
         String sql = "SELECT * FROM " + getTableName() + " WHERE booking_id = ?";
 
@@ -111,32 +111,14 @@ public class BookingDAO extends BaseDAO<Booking> {
         return list;
     }
 
-    public List<Booking> findByStatus(int status) throws SQLException {
-        String sql = "SELECT * FROM " + getTableName() + " WHERE booking_status = ?";
-        List<Booking> list = new ArrayList<>();
-
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, status);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                list.add(mapResultSetToEntity(rs));
-            }
-        }
-        return list;
-    }
-
     /* ================= UPDATE ================= */
-
     public boolean update(Booking b) throws SQLException {
         String sql = """
             UPDATE inet_vehicleparking.tbl_booking SET
             customer_id=?, vehicle_id=?, duration_of_booking=?,
             slot_id=?, booking_status=?, remarks=?, user_id=?,
             booking_time=?, expected_arrival=?, actual_arrival=?,
-            departure_time=?, total_hours=?, total_amount=?
+            departure_time=?, total_hours=?, total_amount=?, booking_ref=?
             WHERE booking_id=?
         """;
 
@@ -150,13 +132,16 @@ public class BookingDAO extends BaseDAO<Booking> {
             ps.setInt(5, b.getBookingStatus());
             ps.setString(6, b.getRemarks());
             ps.setObject(7, b.getUserId(), Types.INTEGER);
-            ps.setTimestamp(8, b.getBookingTime());
-            ps.setTimestamp(9, b.getExpectedArrival());
-            ps.setTimestamp(10, b.getActualArrival());
-            ps.setTimestamp(11, b.getDepartureTime());
+
+            ps.setTimestamp(8, b.getBookingTime() != null ? new Timestamp(b.getBookingTime().getTime()) : null);
+            ps.setTimestamp(9, b.getExpectedArrival() != null ? new Timestamp(b.getExpectedArrival().getTime()) : null);
+            ps.setTimestamp(10, b.getActualArrival() != null ? new Timestamp(b.getActualArrival().getTime()) : null);
+            ps.setTimestamp(11, b.getDepartureTime() != null ? new Timestamp(b.getDepartureTime().getTime()) : null);
+
             ps.setObject(12, b.getTotalHours(), Types.DOUBLE);
             ps.setObject(13, b.getTotalAmount(), Types.DOUBLE);
-            ps.setInt(14, b.getBookingId());
+            ps.setString(14, b.getBookingRef());
+            ps.setInt(15, b.getBookingId());
 
             return ps.executeUpdate() > 0;
         }
@@ -173,8 +158,6 @@ public class BookingDAO extends BaseDAO<Booking> {
             return ps.executeUpdate() > 0;
         }
     }
-
-    /* ================= CHECK IN / OUT ================= */
 
     public boolean checkIn(int bookingId) throws SQLException {
         String sql = """
@@ -201,7 +184,7 @@ public class BookingDAO extends BaseDAO<Booking> {
         """;
 
         try (Connection conn = getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, Booking.STATUS_CHECKED_OUT);
             ps.setObject(2, hours, Types.DOUBLE);
@@ -211,8 +194,6 @@ public class BookingDAO extends BaseDAO<Booking> {
             return ps.executeUpdate() > 0;
         }
     }
-
-    /* ================= DELETE ================= */
 
     public boolean delete(int id) throws SQLException {
         String sql = "DELETE FROM " + getTableName() + " WHERE booking_id=?";
@@ -224,8 +205,6 @@ public class BookingDAO extends BaseDAO<Booking> {
             return ps.executeUpdate() > 0;
         }
     }
-
-    /* ================= DASHBOARD ================= */
 
     public int countBookings() throws SQLException {
         String sql = "SELECT COUNT(*) FROM " + getTableName();

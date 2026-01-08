@@ -1,114 +1,64 @@
-// package ui;
-
-// import dao.BookingDAO;
-// import dao.VehicleOwnerDAO;
-// import java.awt.*;
-// import java.sql.SQLException;
-// import javax.swing.*;
-
-// public class AdminDashboard extends JFrame {
-
-//     private JLabel lblTotalBookings;
-//     private JLabel lblActiveBookings;
-//     private JLabel lblTotalOwners;
-
-//     private BookingDAO bookingDAO;
-//     private VehicleOwnerDAO ownerDAO;
-
-//     public AdminDashboard() {
-//         bookingDAO = new BookingDAO();
-//         ownerDAO = new VehicleOwnerDAO();
-
-//         setTitle("Admin Dashboard");
-//         setSize(400, 250);
-//         setLocationRelativeTo(null);
-//         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-//         initUI();
-//         loadDashboardData();
-//     }
-
-//     private void initUI() {
-//         JPanel panel = new JPanel(new GridLayout(3, 1, 10, 10));
-//         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
-//         lblTotalBookings = new JLabel("Total Bookings: ");
-//         lblActiveBookings = new JLabel("Active Bookings: ");
-//         lblTotalOwners = new JLabel("Total Vehicle Owners: ");
-
-//         lblTotalBookings.setFont(new Font("Arial", Font.BOLD, 16));
-//         lblActiveBookings.setFont(new Font("Arial", Font.BOLD, 16));
-//         lblTotalOwners.setFont(new Font("Arial", Font.BOLD, 16));
-
-//         panel.add(lblTotalBookings);
-//         panel.add(lblActiveBookings);
-//         panel.add(lblTotalOwners);
-
-//         add(panel);
-//     }
-
-//     private void loadDashboardData() {
-//         try {
-//             int totalBookings = bookingDAO.countBookings();
-//             int totalOwners = ownerDAO.countOwners();
-
-//             lblTotalBookings.setText("Total Bookings: " + totalBookings);
-//             lblActiveBookings.setText("Active Bookings: " + totalBookings);
-//             lblTotalOwners.setText("Total Vehicle Owners: " + totalOwners);
-
-//         } catch (SQLException e) {
-//             JOptionPane.showMessageDialog(
-//                     this,
-//                     "Failed to load dashboard data:\n" + e.getMessage(),
-//                     "Database Error",
-//                     JOptionPane.ERROR_MESSAGE
-//             );
-//         }
-//     }
-// }
-// src/ui/AdminDashboard.java
 package ui;
 
-import dao.UserDAO;
+import dao.BookingDAO;
+import dao.ParkingSlotDAO;
+import dao.VehicleOwnerDAO;
 import java.awt.*;
+import java.sql.SQLException;
 import javax.swing.*;
 
 public class AdminDashboard extends JFrame {
 
     private JPanel mainPanel;
     private CardLayout cardLayout;
-
     private JPanel sidebar;
 
-    private UserDAO userDAO;
+    /* DAO Instances */
+    private BookingDAO bookingDAO;
+    private ParkingSlotDAO slotDAO;
+    private VehicleOwnerDAO ownerDAO;
 
-    private int totalVehicleOwners;
+    /* Stats */
+    private int totalBookings;
+    private int totalSlots;
+    private int availableSlots;
+    private int occupiedSlots;
+    private int totalOwners;
 
+    /* ===== COLORS ===== */
     private final Color SIDEBAR_BG = new Color(45, 50, 60);
-    private final Color HEADER_BG = new Color(35, 40, 50);
-    private final Color MAIN_BG = new Color(245, 247, 250);
-    private final Color CARD_BG = Color.WHITE;
+    private final Color HEADER_BG  = new Color(35, 40, 50);
+    private final Color MAIN_BG    = new Color(245, 247, 250);
     private final Color TEXT_WHITE = Color.WHITE;
-    private final Color TEXT_BLACK = Color.BLACK;
-    private final Color ACCENT_BLUE = new Color(0, 122, 255);
 
     public AdminDashboard() {
-        userDAO = new UserDAO();
+        bookingDAO = new BookingDAO();
+        slotDAO = new ParkingSlotDAO();
+        ownerDAO = new VehicleOwnerDAO();
+
         fetchStats();
         initializeFrame();
         createSidebar();
         createMainContent();
+
         setVisible(true);
     }
 
+    /* ================= FETCH DATA ================= */
     private void fetchStats() {
         try {
-            totalVehicleOwners = userDAO.countUsers();
-        } catch (Exception e) {
-            totalVehicleOwners = 0; // fallback
+            totalBookings = bookingDAO.countBookings();
+            totalSlots = slotDAO.countSlots();
+            availableSlots = slotDAO.countAvailableSlots();
+            occupiedSlots = slotDAO.countOccupiedSlots();
+            // totalOwners = ownerDAO.countVehicleOwners();
+        } catch (SQLException e) {
+            totalBookings = totalSlots = availableSlots = occupiedSlots = totalOwners = 0;
+            e.printStackTrace();
         }
     }
 
+    /* ================= FRAME ================= */
     private void initializeFrame() {
         setTitle("Parking Management System - Admin Dashboard");
         setSize(1200, 750);
@@ -117,68 +67,117 @@ public class AdminDashboard extends JFrame {
         setLayout(new BorderLayout());
     }
 
+    /* ================= SIDEBAR ================= */
     private void createSidebar() {
         sidebar = new JPanel();
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
         sidebar.setBackground(SIDEBAR_BG);
         sidebar.setPreferredSize(new Dimension(250, getHeight()));
 
-        JLabel sidebarTitle = new JLabel("NAVIGATION");
-        sidebarTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        sidebarTitle.setForeground(TEXT_WHITE);
-        sidebarTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-        sidebarTitle.setBorder(BorderFactory.createEmptyBorder(25, 0, 25, 0));
-        sidebar.add(sidebarTitle);
+        JLabel title = new JLabel("NAVIGATION");
+        title.setForeground(TEXT_WHITE);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        title.setBorder(BorderFactory.createEmptyBorder(25, 0, 25, 0));
+        sidebar.add(title);
 
-        String[] menuItems = {"Dashboard", "User Management"};
-        for (String item : menuItems) {
-            sidebar.add(createMenuItem(item));
-            sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
-        }
+        sidebar.add(createMenuButton("Dashboard", "DASHBOARD"));
+        sidebar.add(createMenuButton("Booking Management", "BOOKINGS"));
+        sidebar.add(createMenuButton("Parking Management", "PARKING"));
+        sidebar.add(createMenuButton("Vehicle Owners", "OWNERS"));
 
         add(sidebar, BorderLayout.WEST);
     }
 
-    private JButton createMenuItem(String text) {
-        JButton button = new JButton(text);
-        button.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        button.setForeground(TEXT_WHITE);
-        button.setBackground(SIDEBAR_BG);
-        button.setBorder(BorderFactory.createEmptyBorder(15, 25, 15, 25));
-        button.setHorizontalAlignment(SwingConstants.LEFT);
-        button.setMaximumSize(new Dimension(250, 50));
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setFocusPainted(false);
+    private JButton createMenuButton(String text, String panelName) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        btn.setForeground(TEXT_WHITE);
+        btn.setBackground(SIDEBAR_BG);
+        btn.setBorder(BorderFactory.createEmptyBorder(15, 25, 15, 25));
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
+        btn.setMaximumSize(new Dimension(250, 50));
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        button.addActionListener(e -> JOptionPane.showMessageDialog(this, text + " panel clicked"));
-
-        return button;
+        btn.addActionListener(e -> cardLayout.show(mainPanel, panelName));
+        return btn;
     }
 
+    /* ================= MAIN CONTENT ================= */
     private void createMainContent() {
-        JPanel header = new JPanel();
+
+        /* ----- Header ----- */
+        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT));
         header.setBackground(HEADER_BG);
         header.setPreferredSize(new Dimension(getWidth(), 70));
-        JLabel title = new JLabel("DASHBOARD");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        title.setForeground(TEXT_WHITE);
-        header.add(title);
+
+        JLabel headerTitle = new JLabel("ADMIN DASHBOARD");
+        headerTitle.setForeground(TEXT_WHITE);
+        headerTitle.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        header.add(headerTitle);
+
         add(header, BorderLayout.NORTH);
 
-        mainPanel = new JPanel();
+        /* ----- Main Panel ----- */
         cardLayout = new CardLayout();
-        mainPanel.setLayout(cardLayout);
+        mainPanel = new JPanel(cardLayout);
         mainPanel.setBackground(MAIN_BG);
 
-        JPanel dashboardPanel = new JPanel();
-        dashboardPanel.setBackground(MAIN_BG);
-        dashboardPanel.add(new JLabel("Total Vehicle Owners: " + totalVehicleOwners));
-
-        mainPanel.add(dashboardPanel, "Dashboard");
+        // Dashboard summary
+        mainPanel.add(createDashboardPanel(), "DASHBOARD");
+        // Booking panel
+        mainPanel.add(new BookingPanel(), "BOOKINGS");
+        // Parking panel using ParkingSlotPanel (table UI)
+        mainPanel.add(new ParkingSlotPanel(), "PARKING");
+        // Vehicle owners panel
+        mainPanel.add(createOwnersPanel(), "OWNERS");
 
         add(mainPanel, BorderLayout.CENTER);
+        cardLayout.show(mainPanel, "DASHBOARD");
     }
 
+    /* ================= DASHBOARD PANELS ================= */
+    private JPanel createDashboardPanel() {
+        JPanel panel = new JPanel(new GridLayout(2, 3, 20, 20));
+        panel.setBackground(MAIN_BG);
+        panel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+
+        panel.add(createStatCard("Total Bookings", totalBookings));
+        panel.add(createStatCard("Total Slots", totalSlots));
+        panel.add(createStatCard("Available Slots", availableSlots));
+        panel.add(createStatCard("Occupied Slots", occupiedSlots));
+        panel.add(createStatCard("Vehicle Owners", totalOwners));
+
+        return panel;
+    }
+
+    private JPanel createStatCard(String title, int value) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+
+        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        JLabel valueLabel = new JLabel(String.valueOf(value), SwingConstants.CENTER);
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 36));
+
+        card.add(titleLabel, BorderLayout.NORTH);
+        card.add(valueLabel, BorderLayout.CENTER);
+
+        return card;
+    }
+
+    private JPanel createOwnersPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(MAIN_BG);
+        JLabel label = new JLabel("Vehicle Owners Panel", SwingConstants.CENTER);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        panel.add(label, BorderLayout.CENTER);
+        return panel;
+    }
+
+    /* ================= MAIN ================= */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(AdminDashboard::new);
     }

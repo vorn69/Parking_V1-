@@ -1,90 +1,56 @@
-// src/models/Payment.java
 package models;
 
-import java.sql.Timestamp;
+import java.util.Date;
 
 public class Payment {
-    private Integer paymentId;
-    private Integer bookingId;
-    private Double amountDue;
-    private Double amountPaid;
-    private String remarks;
-    private Integer paymentStatus;
-    private String paidBy;
+
+    private String refNo;
+    private String bookingRef;
     private Integer userId;
-    private Timestamp paymentDate;
-    
-    // Status constants
-    public static final int STATUS_PENDING = 0;
-    public static final int STATUS_PARTIAL = 1;
-    public static final int STATUS_PAID = 2;
-    public static final int STATUS_REFUNDED = 3;
-    
-    // Related objects
-    private Booking booking;
-    private User user;
-    
-    // Constructors
-    public Payment() {}
-    
-    public Payment(Integer bookingId, Double amountDue) {
-        this.bookingId = bookingId;
-        this.amountDue = amountDue;
-        this.paymentStatus = STATUS_PENDING;
-        this.paymentDate = new Timestamp(System.currentTimeMillis());
+    private double dueAmount;
+    private double paidAmount;
+    private String method;
+    private Date paymentDate;
+    private String remarks;
+
+    // Full constructor
+    public Payment(String refNo, String bookingRef, Integer userId, double dueAmount,
+                   double paidAmount, String method, Date paymentDate, String remarks) {
+        this.refNo = refNo;
+        this.bookingRef = bookingRef;
+        this.userId = userId;
+        this.dueAmount = dueAmount;
+        this.paidAmount = paidAmount;
+        this.method = method;
+        this.paymentDate = paymentDate;
+        this.remarks = remarks;
     }
-    
-    // Getters and Setters
-    public Integer getPaymentId() { return paymentId; }
-    public void setPaymentId(Integer paymentId) { this.paymentId = paymentId; }
-    
-    public Integer getBookingId() { return bookingId; }
-    public void setBookingId(Integer bookingId) { this.bookingId = bookingId; }
-    
-    public Double getAmountDue() { return amountDue; }
-    public void setAmountDue(Double amountDue) { this.amountDue = amountDue; }
-    
-    public Double getAmountPaid() { return amountPaid; }
-    public void setAmountPaid(Double amountPaid) { this.amountPaid = amountPaid; }
-    
-    public String getRemarks() { return remarks; }
-    public void setRemarks(String remarks) { this.remarks = remarks; }
-    
-    public Integer getPaymentStatus() { return paymentStatus; }
-    public void setPaymentStatus(Integer paymentStatus) { this.paymentStatus = paymentStatus; }
-    
-    public String getPaidBy() { return paidBy; }
-    public void setPaidBy(String paidBy) { this.paidBy = paidBy; }
-    
+
+    // No-arg constructor (needed by PaymentPanel)
+    public Payment() {}
+
+    // GETTERS & SETTERS
+    public String getRefNo() { return refNo; }
+    public void setRefNo(String refNo) { this.refNo = refNo; }
+
+    public String getBookingRef() { return bookingRef; }
+    public void setBookingRef(String bookingRef) { this.bookingRef = bookingRef; }
+
     public Integer getUserId() { return userId; }
     public void setUserId(Integer userId) { this.userId = userId; }
-    
-    public Timestamp getPaymentDate() { return paymentDate; }
-    public void setPaymentDate(Timestamp paymentDate) { this.paymentDate = paymentDate; }
-    
-    // Related object getters/setters
-    public Booking getBooking() { return booking; }
-    public void setBooking(Booking booking) { this.booking = booking; }
-    
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-    
-    // Helper methods
-    public Double getBalance() {
-        return amountDue - (amountPaid != null ? amountPaid : 0.0);
-    }
-    
-    public boolean isPaidInFull() {
-        return getBalance() <= 0;
-    }
-    
-    public String getStatusText() {
-        switch (paymentStatus) {
-            case STATUS_PENDING: return "Pending";
-            case STATUS_PARTIAL: return "Partial";
-            case STATUS_PAID: return "Paid";
-            case STATUS_REFUNDED: return "Refunded";
-            default: return "Unknown";
-        }
-    }
+
+    public double getDueAmount() { return dueAmount; }
+    public void setDueAmount(double dueAmount) { this.dueAmount = dueAmount; }
+
+    public double getPaidAmount() { return paidAmount; }
+    public void setPaidAmount(double paidAmount) { this.paidAmount = paidAmount; }
+
+    public String getMethod() { return method; }
+    public void setMethod(String method) { this.method = method; }
+
+    public Date getPaymentDate() { return paymentDate; }
+    public void setPaymentDate(Date paymentDate) { this.paymentDate = paymentDate; }
+
+    public String getRemarks() { return remarks; }
+    public void setRemarks(String remarks) { this.remarks = remarks; }
 }
