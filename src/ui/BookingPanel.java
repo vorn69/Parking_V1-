@@ -77,7 +77,7 @@ public class BookingPanel extends JPanel {
         JPanel tablePanel = new JPanel(new BorderLayout());
         tablePanel.setBackground(CARD_BG);
 
-        String[] columns = {"Booking ID", "Customer", "Vehicle", "Duration", "Slot", "Status", "Remarks"};
+        String[] columns = {"Booking ID", "Customer ID", "Vehicle Plate", "Duration", "Slot", "Status", "Remarks"};
         bookingTableModel = new DefaultTableModel(columns, 0) {
             public boolean isCellEditable(int row, int col) { return false; }
         };
@@ -133,10 +133,13 @@ public class BookingPanel extends JPanel {
             bookingTableModel.setRowCount(0);
 
             for (Booking b : bookingData) {
+                // FIX: Use userId and vehiclePlateNumber directly
+                String vehiclePlate = b.getVehicle() != null ? b.getVehicle().getVehiclePlateNumber() : "-";
+
                 bookingTableModel.addRow(new Object[]{
                         b.getBookingId(),
-                        b.getCustomer() != null ? b.getCustomer().getFullname() : "-",
-                        // b.getVehicle() != null ? b.getVehicle().getPlateNumber() : "-",
+                        b.getUserId() != null ? b.getUserId() : "-",
+                        vehiclePlate,
                         b.getDurationOfBooking(),
                         b.getParkingSlot() != null ? b.getParkingSlot().getSlotNumber() : "-",
                         b.getBookingStatus(),
