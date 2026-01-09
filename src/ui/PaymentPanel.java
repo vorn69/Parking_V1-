@@ -1,80 +1,114 @@
 package ui;
 
-import dao.BookingDAO;
 import dao.PaymentDAO;
-import models.Booking;
-import models.Payment;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import models.Payment;
 
 public class PaymentPanel extends JPanel {
 
-    private JTable paymentTable;
-    private DefaultTableModel tableModel;
-    private JComboBox<String> bookingCombo;
-    private JTextField refNoField, methodField, paidField, remarksField;
+    private JTable table;
+    private DefaultTableModel model;
     private PaymentDAO paymentDAO;
-    private BookingDAO bookingDAO;
+
+    // Colors (dashboard style)
+    private final Color BG = new Color(245, 247, 250);
+    private final Color CARD = Color.WHITE;
+    private final Color BLUE = new Color(33, 150, 243);
+    private final Color GREEN = new Color(76, 175, 80);
+    private final Color ORANGE = new Color(255, 152, 0);
 
     public PaymentPanel() {
         paymentDAO = new PaymentDAO();
-        bookingDAO = new BookingDAO();
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(20, 20));
+        setBackground(BG);
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        createTopPanel();
-        createTable();
+        add(createHeader(), BorderLayout.NORTH);
+        add(createTableCard(), BorderLayout.CENTER);
+
         loadPayments();
-        loadBookingCombo();
     }
 
-    private void createTopPanel() {
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+    // ================= HEADER =================
+    private JPanel createHeader() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG);
 
-        refNoField = new JTextField(10);
-        methodField = new JTextField(10);
-        paidField = new JTextField(7);
-        remarksField = new JTextField(15);
-        bookingCombo = new JComboBox<>();
+        JLabel title = new JLabel("Payment Management");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 24));
 
-        JButton addBtn = new JButton("Add Payment");
-        addBtn.addActionListener(e -> addPayment());
+        JButton addBtn = new JButton("+ Add Payment");
+        addBtn.setBackground(GREEN);
+        addBtn.setForeground(Color.WHITE);
+        addBtn.setFocusPainted(false);
+        addBtn.addActionListener(e -> showAddDialog());
 
-        topPanel.add(new JLabel("Ref No:"));
-        topPanel.add(refNoField);
-        topPanel.add(new JLabel("Booking:"));
-        topPanel.add(bookingCombo);
-        topPanel.add(new JLabel("Method:"));
-        topPanel.add(methodField);
-        topPanel.add(new JLabel("Paid:"));
-        topPanel.add(paidField);
-        topPanel.add(new JLabel("Remarks:"));
-        topPanel.add(remarksField);
-        topPanel.add(addBtn);
+        panel.add(title, BorderLayout.WEST);
+        panel.add(addBtn, BorderLayout.EAST);
 
-        add(topPanel, BorderLayout.NORTH);
+        return panel;
     }
 
-    private void createTable() {
-        String[] columns = {"Ref No", "Booking Ref", "User ID", "Paid Amount", "Method", "Date", "Remarks"};
-        tableModel = new DefaultTableModel(columns, 0);
-        paymentTable = new JTable(tableModel);
-        add(new JScrollPane(paymentTable), BorderLayout.CENTER);
+    // ================= TABLE CARD =================
+    private JPanel createTableCard() {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(CARD);
+        card.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        model = new DefaultTableModel(
+                new String[]{
+                        "Ref No", "Booking Ref", "User ID",
+                        "Due", "Paid", "Method", "Date", "Remarks"
+                }, 0
+        );
+
+        table = new JTable(model);
+        table.setRowHeight(30);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+
+        JScrollPane scroll = new JScrollPane(table);
+        card.add(scroll, BorderLayout.CENTER);
+
+        // Bottom buttons
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        bottom.setBackground(CARD);
+
+        // Refresh
+        JButton refreshBtn = new JButton("Refresh");
+        refreshBtn.setBackground(BLUE);
+        refreshBtn.setForeground(Color.WHITE);
+        refreshBtn.addActionListener(e -> loadPayments());
+        bottom.add(refreshBtn);
+
+        // Invoice
+        JButton invoiceBtn = new JButton("Invoice");
+        invoiceBtn.setBackground(ORANGE);
+        invoiceBtn.setForeground(Color.WHITE);
+        invoiceBtn.addActionListener(e -> showInvoice());
+        bottom.add(invoiceBtn);
+
+        card.add(bottom, BorderLayout.SOUTH);
+
+        return card;
     }
 
+    // ================= LOAD DATA =================
     private void loadPayments() {
-        tableModel.setRowCount(0);
+        model.setRowCount(0);
         try {
-            List<Payment> payments = paymentDAO.findAll(); // Use findAll()
-            for (Payment p : payments) {
-                tableModel.addRow(new Object[]{
+            List<Payment> list = paymentDAO.findAll();
+            for (Payment p : list) {
+                model.addRow(new Object[]{
                         p.getRefNo(),
                         p.getBookingRef(),
                         p.getUserId(),
+                        p.getDueAmount(),
                         p.getPaidAmount(),
                         p.getMethod(),
                         p.getPaymentDate(),
@@ -82,69 +116,80 @@ public class PaymentPanel extends JPanel {
                 });
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, e.getMessage(), "DB Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void loadBookingCombo() {
-        bookingCombo.removeAllItems();
-        try {
-            for (Booking b : bookingDAO.findAll()) { // Use findAll()
-                bookingCombo.addItem(b.getBookingRef());
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
+    // ================= ADD PAYMENT =================
+    private void showAddDialog() {
+        JTextField bookingRef = new JTextField();
+        JTextField userId = new JTextField();
+        JTextField due = new JTextField();
+        JTextField paid = new JTextField();
+        JComboBox<String> method = new JComboBox<>(new String[]{"CASH", "CARD", "ABA", "ACLED"});
+        JTextField remarks = new JTextField();
 
-    private void addPayment() {
-        String refNo = refNoField.getText();
-        String bookingRef = (String) bookingCombo.getSelectedItem();
-        String method = methodField.getText();
-        String paidStr = paidField.getText();
-        String remarks = remarksField.getText();
+        Object[] fields = {
+                "Booking Ref:", bookingRef,
+                "User ID:", userId,
+                "Due Amount:", due,
+                "Paid Amount:", paid,
+                "Method:", method,
+                "Remarks:", remarks
+        };
 
-        if (refNo.isEmpty() || bookingRef == null || method.isEmpty() || paidStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please fill all required fields");
-            return;
-        }
+        int opt = JOptionPane.showConfirmDialog(
+                this, fields, "Add Payment",
+                JOptionPane.OK_CANCEL_OPTION
+        );
 
-        double paid;
-        try {
-            paid = Double.parseDouble(paidStr);
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Invalid paid amount");
-            return;
-        }
+        if (opt == JOptionPane.OK_OPTION) {
+            try {
+                Payment p = new Payment();
+                p.setRefNo("PAY-" + UUID.randomUUID().toString().substring(0, 8));
+                p.setBookingRef(bookingRef.getText());
+                p.setUserId(Integer.parseInt(userId.getText()));
+                p.setDueAmount(Double.parseDouble(due.getText()));
+                p.setPaidAmount(Double.parseDouble(paid.getText()));
+                p.setMethod(method.getSelectedItem().toString());
+                p.setPaymentDate(new Date());
+                p.setRemarks(remarks.getText());
 
-        try {
-            Booking b = bookingDAO.findAll().stream()
-                    .filter(x -> x.getBookingRef().equals(bookingRef))
-                    .findFirst().orElse(null);
-
-            if (b == null) {
-                JOptionPane.showMessageDialog(this, "Booking not found");
-                return;
-            }
-
-            Payment p = new Payment();
-            p.setRefNo(refNo);
-            p.setBookingRef(bookingRef);
-            p.setUserId(b.getUserId());
-            p.setPaidAmount(paid);
-            p.setMethod(method);
-            p.setPaymentDate(new Date());
-            p.setRemarks(remarks);
-
-            if (paymentDAO.insertPayment(p)) {
-                JOptionPane.showMessageDialog(this, "Payment added successfully");
+                paymentDAO.insertPayment(p);
                 loadPayments();
-            } else {
-                JOptionPane.showMessageDialog(this, "Failed to add payment");
-            }
 
-        } catch (SQLException e) {
-            e.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Payment added successfully!");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Invalid input!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    // ================= SHOW INVOICE =================
+    private void showInvoice() {
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a payment first.", "No selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String refNo = table.getValueAt(selectedRow, 0).toString(); // Ref No
+
+        try {
+            Payment payment = paymentDAO.findByRefNo(refNo); // Fetch payment from DB
+            if (payment != null) {
+                JFrame invoiceFrame = new JFrame("Invoice - " + payment.getRefNo());
+                invoiceFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                invoiceFrame.setSize(500, 600);
+                invoiceFrame.setLocationRelativeTo(this);
+                invoiceFrame.add(new InvoicePanel(payment)); // Pass payment
+                invoiceFrame.setVisible(true);
+            } else {
+                JOptionPane.showMessageDialog(this, "Payment not found.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error loading invoice: " + ex.getMessage(), "DB Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

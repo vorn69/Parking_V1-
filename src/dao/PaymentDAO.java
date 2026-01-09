@@ -31,7 +31,7 @@ public class PaymentDAO extends BaseDAO<Payment> {
         return p;
     }
 
-    // GET ALL PAYMENTS
+    // ================= GET ALL PAYMENTS =================
     public List<Payment> findAll() throws SQLException {
         String sql = "SELECT * FROM " + getTableName() + " ORDER BY payment_date DESC";
         List<Payment> list = new ArrayList<>();
@@ -47,7 +47,7 @@ public class PaymentDAO extends BaseDAO<Payment> {
         return list;
     }
 
-    // INSERT PAYMENT
+    // ================= INSERT PAYMENT =================
     public boolean insertPayment(Payment p) throws SQLException {
         String sql = "INSERT INTO " + getTableName() +
                 "(ref_no, booking_ref, user_id, due_amount, paid_amount, method, payment_date, remarks) " +
@@ -62,10 +62,24 @@ public class PaymentDAO extends BaseDAO<Payment> {
             ps.setObject(4, p.getDueAmount(), Types.DOUBLE);
             ps.setObject(5, p.getPaidAmount(), Types.DOUBLE);
             ps.setString(6, p.getMethod());
-            ps.setTimestamp(7, new Timestamp(p.getPaymentDate().getTime()));
+            ps.setTimestamp(7, p.getPaymentDate() != null ? new Timestamp(p.getPaymentDate().getTime()) : new Timestamp(System.currentTimeMillis()));
             ps.setString(8, p.getRemarks());
 
             return ps.executeUpdate() > 0;
+        }
+    }
+
+    // ================= FIND PAYMENT BY REF NO =================
+    public Payment findByRefNo(String refNo) throws SQLException {
+        String sql = "SELECT * FROM " + getTableName() + " WHERE ref_no = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, refNo);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? mapResultSetToEntity(rs) : null;
+            }
         }
     }
 }

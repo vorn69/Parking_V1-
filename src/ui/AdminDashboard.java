@@ -13,23 +13,19 @@ public class AdminDashboard extends JFrame {
     private CardLayout cardLayout;
     private JPanel contentPanel;
 
-    // Dashboard components
     private JLabel lblBookings, lblVehicles, lblOwners, lblSlots;
     private JTable table;
 
-    // DAO
     private BookingDAO bookingDAO;
     private VehicleDAO vehicleDAO;
     private VehicleOwnerDAO ownerDAO;
     private ParkingSlotDAO slotDAO;
 
     // COLORS
-    private final Color SIDEBAR_BG = new Color(32, 34, 45);
+    private final Color SIDEBAR = new Color(32, 34, 45);
     private final Color HEADER = new Color(45, 49, 66);
-    private final Color CARD1 = new Color(66, 135, 245);
-    private final Color CARD2 = new Color(76, 175, 80);
-    private final Color CARD3 = new Color(255, 152, 0);
-    private final Color CARD4 = new Color(233, 30, 99);
+    private final Color SIDEBAR_BTN_CLR = new Color(33, 150, 243); // Blue for all buttons
+    private final Color LOGOUT_CLR = new Color(220, 53, 69);  // Dark red
     private final Color BG = new Color(245, 246, 250);
 
     public AdminDashboard() {
@@ -50,10 +46,13 @@ public class AdminDashboard extends JFrame {
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
 
+        // Add pages
         contentPanel.add(createDashboardPage(), "DASHBOARD");
         contentPanel.add(new BookingPanel(), "BOOKINGS");
+        contentPanel.add(new PaymentPanel(), "PAYMENTS");
         contentPanel.add(new VehicleOwnerPanel(), "OWNERS");
         contentPanel.add(new ParkingSlotPanel(), "SLOTS");
+        contentPanel.add(new UserManagementPanel(), "USERS"); // <-- Added
 
         add(contentPanel, BorderLayout.CENTER);
 
@@ -68,7 +67,7 @@ public class AdminDashboard extends JFrame {
     private JPanel createSidebar() {
         JPanel panel = new JPanel();
         panel.setPreferredSize(new Dimension(220, getHeight()));
-        panel.setBackground(SIDEBAR_BG);
+        panel.setBackground(SIDEBAR);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
         JLabel title = new JLabel("ADMIN");
@@ -77,78 +76,44 @@ public class AdminDashboard extends JFrame {
         title.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
         panel.add(title);
 
-        // Blue menu buttons with rounded border
-        panel.add(menuBox("Dashboard", "DASHBOARD"));
-        panel.add(menuBox("Bookings", "BOOKINGS"));
-        panel.add(menuBox("Vehicles", "VEHICLES"));
-        panel.add(menuBox("Owners", "OWNERS"));
-        panel.add(menuBox("Parking Slots", "SLOTS"));
-
-        // Red Logout button
-        panel.add(Box.createVerticalGlue()); // push logout to bottom
-        panel.add(logoutBox("Logout"));
+        // Sidebar buttons
+        panel.add(menuBtn("Dashboard", "DASHBOARD", SIDEBAR_BTN_CLR));
+        panel.add(menuBtn("Bookings", "BOOKINGS", SIDEBAR_BTN_CLR));
+        panel.add(menuBtn("Payments", "PAYMENTS", SIDEBAR_BTN_CLR));
+        panel.add(menuBtn("Owners", "OWNERS", SIDEBAR_BTN_CLR));
+        panel.add(menuBtn("Parking Slots", "SLOTS", SIDEBAR_BTN_CLR));
+        panel.add(menuBtn("User Management", "USERS", SIDEBAR_BTN_CLR)); // <-- Added
+        panel.add(Box.createVerticalStrut(20));
+        panel.add(menuBtn("Logout", null, LOGOUT_CLR));
 
         return panel;
     }
 
-    private JButton menuBox(String text, String page) {
+    private JButton menuBtn(String text, String page, Color color) {
         JButton btn = new JButton(text);
-        btn.setMaximumSize(new Dimension(200, 50));
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        btn.setMaximumSize(new Dimension(190, 45));
+        btn.setBackground(color);
         btn.setForeground(Color.WHITE);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btn.setFocusPainted(false);
-
-        // Blue background with rounded border
-        btn.setBackground(CARD1);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(30, 90, 200), 2, true),
+                BorderFactory.createLineBorder(color.darker(), 1),
                 BorderFactory.createEmptyBorder(10, 20, 10, 20)
         ));
-
-        // Hover effect
-        btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                btn.setBackground(new Color(30, 90, 200));
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                btn.setBackground(CARD1);
-            }
-        });
-
-        btn.addActionListener(e -> cardLayout.show(contentPanel, page));
-
-        return btn;
-    }
-
-    private JButton logoutBox(String text) {
-        JButton btn = new JButton(text);
-        btn.setMaximumSize(new Dimension(200, 50));
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        btn.setForeground(Color.WHITE);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setFocusPainted(false);
-
-        // Red background with rounded border
-        btn.setBackground(new Color(233, 30, 30));
-        btn.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(180, 0, 0), 2, true),
-                BorderFactory.createEmptyBorder(10, 20, 10, 20)
-        ));
-
-        // Hover effect
-        btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                btn.setBackground(new Color(180, 0, 0));
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                btn.setBackground(new Color(233, 30, 30));
-            }
-        });
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         btn.addActionListener(e -> {
-            dispose();
-            new LoginFrame().setVisible(true);
+            if ("Logout".equals(text)) {
+                dispose();
+                new LoginFrame().setVisible(true);
+            } else {
+                cardLayout.show(contentPanel, page);
+                if ("DASHBOARD".equals(page)) refreshDashboard();
+                if ("USERS".equals(page)) {
+                    // ((UserManagementPanel) contentPanel.getComponent(5)).refreshTable(); // <-- refresh DB
+                }
+            }
         });
 
         return btn;
@@ -164,12 +129,12 @@ public class AdminDashboard extends JFrame {
         title.setForeground(Color.WHITE);
         title.setFont(new Font("Segoe UI", Font.BOLD, 24));
         title.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
-        panel.add(title, BorderLayout.WEST);
 
+        panel.add(title, BorderLayout.WEST);
         return panel;
     }
 
-    // ================= DASHBOARD PAGE =================
+    // ================= DASHBOARD =================
     private JPanel createDashboardPage() {
         JPanel panel = new JPanel(new BorderLayout(15, 15));
         panel.setBackground(BG);
@@ -178,10 +143,10 @@ public class AdminDashboard extends JFrame {
         JPanel stats = new JPanel(new GridLayout(1, 4, 15, 15));
         stats.setOpaque(false);
 
-        lblBookings = createCard("Bookings", CARD1);
-        lblVehicles = createCard("Vehicles", CARD2);
-        lblOwners = createCard("Owners", CARD3);
-        lblSlots = createCard("Slots", CARD4);
+        lblBookings = createCard(new Color(33, 150, 243));   // Blue
+        lblVehicles = createCard(new Color(0, 200, 83));     // Green
+        lblOwners   = createCard(new Color(255, 193, 7));    // Yellow
+        lblSlots    = createCard(new Color(244, 67, 54));    // Red
 
         stats.add(lblBookings);
         stats.add(lblVehicles);
@@ -199,7 +164,7 @@ public class AdminDashboard extends JFrame {
         return panel;
     }
 
-    private JLabel createCard(String title, Color color) {
+    private JLabel createCard(Color color) {
         JLabel label = new JLabel("", SwingConstants.CENTER);
         label.setOpaque(true);
         label.setBackground(color);
@@ -210,9 +175,14 @@ public class AdminDashboard extends JFrame {
     }
 
     // ================= DATA =================
+    private void refreshDashboard() {
+        loadStats();
+        loadTable();
+    }
+
     private void loadStats() {
         try {
-            lblBookings.setText(cardText("Bookings", bookingDAO.countBookings()));
+            // lblBookings.setText(cardText("Bookings", bookingDAO.countBookings()));
             lblVehicles.setText(cardText("Vehicles", vehicleDAO.countVehicles()));
             lblOwners.setText(cardText("Owners", ownerDAO.countOwners()));
             lblSlots.setText(cardText("Slots", slotDAO.countSlots()));
@@ -243,8 +213,7 @@ public class AdminDashboard extends JFrame {
     }
 
     private String cardText(String title, int value) {
-        return "<html><center><h3>" + title +
-                "</h3><h1>" + value + "</h1></center></html>";
+        return "<html><center><h3>" + title + "</h3><h1>" + value + "</h1></center></html>";
     }
 
     public static void main(String[] args) {
