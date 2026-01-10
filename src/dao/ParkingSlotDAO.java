@@ -213,6 +213,35 @@ public class ParkingSlotDAO extends BaseDAO<ParkingSlot> {
         }
     }
 
+    //update parking slot status to maintenance for all slots in a zone
+    public int markZoneAsMaintenance(String zone) throws SQLException {
+        String sql = "UPDATE " + getTableName() +
+                " SET parking_slot_status=? WHERE zone=?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, ParkingSlot.STATUS_MAINTENANCE);
+            pstmt.setString(2, zone);
+            return pstmt.executeUpdate();
+        }
+    }
+
+// In ParkingSlotDAO.java
+    public boolean updateStatus(ParkingSlot slot) throws SQLException {
+        String sql = "UPDATE " + getTableName() + " SET parking_slot_status=? WHERE parking_slot_id=?";
+        try (Connection conn = getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, slot.getParkingSlotStatus());  // integer from model
+            pstmt.setInt(2, slot.getParkingSlotId());      // correct slot ID
+
+            return pstmt.executeUpdate() > 0; // returns true if DB updated
+        }
+    }
+
+
+
     /* ================= VALIDATION ================= */
 
     public boolean existsBySlotNumber(Integer slotNumber) throws SQLException {
@@ -220,7 +249,7 @@ public class ParkingSlotDAO extends BaseDAO<ParkingSlot> {
                 " WHERE parking_slot_number=?";
 
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setInt(1, slotNumber);
             try (ResultSet rs = pstmt.executeQuery()) {

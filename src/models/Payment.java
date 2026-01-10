@@ -15,7 +15,7 @@ public class Payment {
 
     // Full constructor
     public Payment(String refNo, String bookingRef, Integer userId, double dueAmount,
-                   double paidAmount, String method, Date paymentDate, String remarks) {
+                double paidAmount, String method, Date paymentDate, String remarks) {
         this.refNo = refNo;
         this.bookingRef = bookingRef;
         this.userId = userId;

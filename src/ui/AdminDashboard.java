@@ -183,6 +183,7 @@ public class AdminDashboard extends JFrame {
     private void loadStats() {
         try {
             // lblBookings.setText(cardText("Bookings", bookingDAO.countBookings()));
+            lblBookings.setText(cardText("Bookings", bookingDAO.countBookings()));
             lblVehicles.setText(cardText("Vehicles", vehicleDAO.countVehicles()));
             lblOwners.setText(cardText("Owners", ownerDAO.countOwners()));
             lblSlots.setText(cardText("Slots", slotDAO.countSlots()));

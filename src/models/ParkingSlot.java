@@ -63,4 +63,26 @@
         public Integer getSlotNumber() {
             return parkingSlotNumber;
         }
+
+    public void setStatusFromText(String text) {
+        switch (text) {
+            case "Available":
+                this.parkingSlotStatus = STATUS_AVAILABLE;
+                break;
+            case "Occupied":
+                this.parkingSlotStatus = STATUS_OCCUPIED;
+                break;
+            case "Reserved":
+                this.parkingSlotStatus = STATUS_RESERVED;
+                break;
+            case "Maintenance":
+                this.parkingSlotStatus = STATUS_MAINTENANCE;
+                break;
+            default:
+                this.parkingSlotStatus = STATUS_AVAILABLE;
+        }
+    }
+
+
+
     }
