@@ -1,11 +1,12 @@
-// src/dao/ParkingSlotDAO.java
 package dao;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import models.Booking;
 import models.ParkingSlot;
-    
+import models.Payment;
+
 public class ParkingSlotDAO extends BaseDAO<ParkingSlot> {
 
     @Override
@@ -24,237 +25,136 @@ public class ParkingSlotDAO extends BaseDAO<ParkingSlot> {
         slot.setParkingSlotId(rs.getInt("parking_slot_id"));
         slot.setParkingSlotNumber(rs.getInt("parking_slot_number"));
         slot.setParkingSlotStatus(rs.getInt("parking_slot_status"));
-        slot.setUserId(rs.getObject("user_id") != null ? rs.getInt("user_id") : null);
+        slot.setUserId((Integer) rs.getObject("user_id"));
         slot.setSlotType(rs.getString("slot_type"));
         slot.setZone(rs.getString("zone"));
         return slot;
     }
 
-    /* ================= CREATE ================= */
-
-    public Integer create(ParkingSlot slot) throws SQLException {
-        String sql = "INSERT INTO " + getTableName() +
-                " (parking_slot_number, parking_slot_status, user_id, slot_type, zone) " +
-                "VALUES (?, ?, ?, ?, ?)";
-
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
-            pstmt.setInt(1, slot.getParkingSlotNumber());
-            pstmt.setInt(2, slot.getParkingSlotStatus() != null
-                    ? slot.getParkingSlotStatus()
-                    : ParkingSlot.STATUS_AVAILABLE);
-
-            if (slot.getUserId() != null) {
-                pstmt.setInt(3, slot.getUserId());
-            } else {
-                pstmt.setNull(3, Types.INTEGER);
-            }
-
-            pstmt.setString(4, slot.getSlotType());
-            pstmt.setString(5, slot.getZone());
-
-            pstmt.executeUpdate();
-
-            try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                return rs.next() ? rs.getInt(1) : null;
-            }
-        }
-    }
-
-    /* ================= READ ================= */
-
-    public ParkingSlot findById(Integer id) throws SQLException {
-        String sql = "SELECT * FROM " + getTableName() + " WHERE parking_slot_id = ?";
-
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, id);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                return rs.next() ? mapResultSetToEntity(rs) : null;
-            }
-        }
-    }
-
-    public ParkingSlot findBySlotNumber(Integer slotNumber) throws SQLException {
-        String sql = "SELECT * FROM " + getTableName() + " WHERE parking_slot_number = ?";
-
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, slotNumber);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                return rs.next() ? mapResultSetToEntity(rs) : null;
-            }
-        }
-    }
-
+    // ================= CRUD =================
     public List<ParkingSlot> findAll() throws SQLException {
-        String sql = "SELECT * FROM " + getTableName() + " ORDER BY parking_slot_number";
-        List<ParkingSlot> slots = new ArrayList<>();
-
+        String sql = "SELECT * FROM " + getTableName() + " ORDER BY parking_slot_number ASC";
+        List<ParkingSlot> list = new ArrayList<>();
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
-
-            while (rs.next()) {
-                slots.add(mapResultSetToEntity(rs));
-            }
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) list.add(mapResultSetToEntity(rs));
         }
-        return slots;
+        return list;
     }
 
-    public List<ParkingSlot> findAvailableSlots() throws SQLException {
-        return findByStatus(ParkingSlot.STATUS_AVAILABLE);
-    }
-
-    public List<ParkingSlot> findByStatus(Integer status) throws SQLException {
-        String sql = "SELECT * FROM " + getTableName() +
-                " WHERE parking_slot_status = ? ORDER BY parking_slot_number";
-
-        List<ParkingSlot> slots = new ArrayList<>();
-
+    public ParkingSlot findById(int id) throws SQLException {
+        String sql = "SELECT * FROM " + getTableName() + " WHERE parking_slot_id = ?";
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, status);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    slots.add(mapResultSetToEntity(rs));
-                }
-            }
-        }
-        return slots;
-    }
-
-    /* ================= UPDATE ================= */
-
-    public boolean update(ParkingSlot slot) throws SQLException {
-        String sql = "UPDATE " + getTableName() +
-                " SET parking_slot_number=?, parking_slot_status=?, user_id=?, slot_type=?, zone=? " +
-                "WHERE parking_slot_id=?";
-
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, slot.getParkingSlotNumber());
-            pstmt.setInt(2, slot.getParkingSlotStatus());
-            if (slot.getUserId() != null) {
-                pstmt.setInt(3, slot.getUserId());
-            } else {
-                pstmt.setNull(3, Types.INTEGER);
-            }
-            pstmt.setString(4, slot.getSlotType());
-            pstmt.setString(5, slot.getZone());
-            pstmt.setInt(6, slot.getParkingSlotId());
-
-            return pstmt.executeUpdate() > 0;
-        }
-    }
-
-    public boolean updateStatus(Integer slotId, Integer status) throws SQLException {
-        String sql = "UPDATE " + getTableName() +
-                " SET parking_slot_status=? WHERE parking_slot_id=?";
-
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, status);
-            pstmt.setInt(2, slotId);
-            return pstmt.executeUpdate() > 0;
-        }
-    }
-
-    /* ================= DELETE ================= */
-
-    public boolean delete(Integer id) throws SQLException {
-        String sql = "DELETE FROM " + getTableName() + " WHERE parking_slot_id=?";
-
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, id);
-            return pstmt.executeUpdate() > 0;
-        }
-    }
-
-    /* ================= COUNT ================= */
-
-    public int countSlots() throws SQLException {
-        String sql = "SELECT COUNT(*) FROM " + getTableName();
-
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
-
-            return rs.next() ? rs.getInt(1) : 0;
-        }
-    }
-
-    public int countAvailableSlots() throws SQLException {
-        return countByStatus(ParkingSlot.STATUS_AVAILABLE);
-    }
-
-    public int countOccupiedSlots() throws SQLException {
-        return countByStatus(ParkingSlot.STATUS_OCCUPIED);
-    }
-
-    private int countByStatus(int status) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM " + getTableName() + " WHERE parking_slot_status=?";
-
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, status);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                return rs.next() ? rs.getInt(1) : 0;
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? mapResultSetToEntity(rs) : null;
             }
         }
     }
 
-    //update parking slot status to maintenance for all slots in a zone
-    public int markZoneAsMaintenance(String zone) throws SQLException {
-        String sql = "UPDATE " + getTableName() +
-                " SET parking_slot_status=? WHERE zone=?";
-
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, ParkingSlot.STATUS_MAINTENANCE);
-            pstmt.setString(2, zone);
-            return pstmt.executeUpdate();
-        }
-    }
-
-// In ParkingSlotDAO.java
     public boolean updateStatus(ParkingSlot slot) throws SQLException {
-        String sql = "UPDATE " + getTableName() + " SET parking_slot_status=? WHERE parking_slot_id=?";
+        String sql = "UPDATE " + getTableName() + " SET parking_slot_status=?, user_id=? WHERE parking_slot_id=?";
         try (Connection conn = getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, slot.getParkingSlotStatus());  // integer from model
-            pstmt.setInt(2, slot.getParkingSlotId());      // correct slot ID
-
-            return pstmt.executeUpdate() > 0; // returns true if DB updated
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, slot.getParkingSlotStatus());
+            if (slot.getUserId() != null)
+                ps.setInt(2, slot.getUserId());
+            else
+                ps.setNull(2, Types.INTEGER);
+            ps.setInt(3, slot.getParkingSlotId());
+            return ps.executeUpdate() > 0;
         }
     }
 
+public void create(Payment payment) throws SQLException {
 
+    String sql = "INSERT INTO inet_vehicleparking.tbl_payment "
+               + "(booking_id, amount_due, amount_paid, payment_status, paid_by, user_id, remarks) "
+               + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-    /* ================= VALIDATION ================= */
+    try (Connection conn = getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
 
-    public boolean existsBySlotNumber(Integer slotNumber) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM " + getTableName() +
-                " WHERE parking_slot_number=?";
+        ps.setInt(1, payment.getBookingId());
+        ps.setDouble(2, payment.getDueAmount());
+        ps.setDouble(3, payment.getPaidAmount());
+        ps.setInt(4, payment.getPaymentStatus());
+        ps.setString(5, payment.getPaidBy());
+        ps.setObject(6, payment.getUserId(), Types.INTEGER);
+        ps.setString(7, payment.getRemarks());
 
-        try (Connection conn = getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setInt(1, slotNumber);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                return rs.next() && rs.getInt(1) > 0;
-            }
-        }
+        ps.executeUpdate();
     }
+}
+
+public int createBookingWithSlotUpdate(Booking booking) throws SQLException {
+    int bookingId = 0;
+    Connection conn = getConnection();
+    try {
+        conn.setAutoCommit(false);
+
+        // 1️⃣ Insert booking
+        String sqlBooking = "INSERT INTO inet_vehicleparking.tbl_booking "
+                + "(customer_id, vehicle_id, slot_id, booking_status, duration_of_booking, remarks, booking_time) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sqlBooking, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, booking.getCustomerId());
+            ps.setInt(2, booking.getVehicleId());
+            ps.setInt(3, booking.getSlotId());
+            ps.setInt(4, Booking.STATUS_PENDING);
+            ps.setString(5, booking.getDurationOfBooking());
+            ps.setString(6, booking.getRemarks());
+            ps.setTimestamp(7, new Timestamp(System.currentTimeMillis()));
+            ps.executeUpdate();
+
+            ResultSet rs = ps.getGeneratedKeys();
+            bookingId = rs.next() ? rs.getInt(1) : 0;
+        }
+
+        // 2️⃣ Update slot to RESERVED
+        String sqlSlot = "UPDATE inet_vehicleparking.tbl_parking_slot SET parking_slot_status=?, user_id=? WHERE parking_slot_id=?";
+        try (PreparedStatement ps = conn.prepareStatement(sqlSlot)) {
+            ps.setInt(1, ParkingSlot.STATUS_RESERVED);
+            ps.setInt(2, booking.getCustomerId());
+            ps.setInt(3, booking.getSlotId());
+            ps.executeUpdate();
+        }
+
+        conn.commit();
+    } catch (SQLException e) {
+        conn.rollback();
+        throw e;
+    } finally {
+        conn.setAutoCommit(true);
+        conn.close();
+    }
+    return bookingId;
+}
+
+
+public void create(ParkingSlot slot) throws SQLException {
+    String sql = "INSERT INTO inet_vehicleparking.tbl_parking_slot "
+               + "(parking_slot_number, parking_slot_status) VALUES (?, ?)";
+
+    try (Connection conn = getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+
+        ps.setInt(1, slot.getParkingSlotNumber());
+        ps.setInt(2, slot.getParkingSlotStatus());
+        ps.executeUpdate();
+    }
+}
+
+    // Inside ParkingSlotDAO
+public int countSlots() throws SQLException {
+    String sql = "SELECT COUNT(*) FROM " + getTableName();
+    try (Connection conn = getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql);
+         ResultSet rs = ps.executeQuery()) {
+        return rs.next() ? rs.getInt(1) : 0;
+    }
+}
+
 }

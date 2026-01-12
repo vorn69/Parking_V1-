@@ -4,6 +4,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import models.Booking;
+import models.ParkingSlot;
 
 public class BookingDAO extends BaseDAO<Booking> {
 
@@ -20,13 +21,11 @@ public class BookingDAO extends BaseDAO<Booking> {
     @Override
     protected Booking mapResultSetToEntity(ResultSet rs) throws SQLException {
         Booking b = new Booking();
-
         b.setBookingId(rs.getInt("booking_id"));
         b.setCustomerId((Integer) rs.getObject("customer_id"));
         b.setVehicleId((Integer) rs.getObject("vehicle_id"));
         b.setSlotId((Integer) rs.getObject("slot_id"));
         b.setUserId((Integer) rs.getObject("user_id"));
-
         b.setBookingStatus(rs.getInt("booking_status"));
         b.setDurationOfBooking(rs.getString("duration_of_booking"));
         b.setRemarks(rs.getString("remarks"));
@@ -34,133 +33,86 @@ public class BookingDAO extends BaseDAO<Booking> {
         b.setExpectedArrival(rs.getTimestamp("expected_arrival"));
         b.setActualArrival(rs.getTimestamp("actual_arrival"));
         b.setDepartureTime(rs.getTimestamp("departure_time"));
-
         b.setTotalHours((Double) rs.getObject("total_hours"));
         b.setTotalAmount((Double) rs.getObject("total_amount"));
-        b.setBookingRef(rs.getString("booking_ref"));
-
-        // OPTIONAL: load relations only if needed
-        if (b.getCustomerId() != null) {
-            b.setCustomer(new UserDAO().findById(b.getCustomerId()));
-        }
-
-        if (b.getVehicleId() != null) {
-            b.setVehicle(new VehicleDAO().findById(b.getVehicleId()));
-        }
-
-        if (b.getSlotId() != null) {
-            b.setParkingSlot(new ParkingSlotDAO().findById(b.getSlotId()));
-        }
-
         return b;
     }
 
-    // ================= READ =================
     public List<Booking> findAll() throws SQLException {
-        String sql = "SELECT * FROM " + getTableName() + " ORDER BY booking_time DESC";
-        List<Booking> list = new ArrayList<>();
+    List<Booking> list = new ArrayList<>();
+    String sql = "SELECT * FROM inet_vehicleparking.tbl_booking ORDER BY booking_time DESC";
 
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+    try (Connection conn = getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery()) {
 
-            while (rs.next()) {
-                list.add(mapResultSetToEntity(rs));
-            }
+        while (rs.next()) {
+            list.add(mapResultSetToEntity(rs));
         }
-        return list;
     }
+    return list;
+}
 
     // ================= CREATE =================
-    public Integer create(Booking b) throws SQLException {
-        String sql = """
-            INSERT INTO inet_vehicleparking.tbl_booking
-            (customer_id, vehicle_id, duration_of_booking, slot_id,
-             booking_status, remarks, user_id, booking_time,
-             expected_arrival, actual_arrival, departure_time,
-             total_hours, total_amount, booking_ref)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """;
+public int create(Booking b) throws SQLException {
 
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+    String sql = "INSERT INTO inet_vehicleparking.tbl_booking "
+            + "(customer_id, vehicle_id, slot_id, booking_status, "
+            + "duration_of_booking, remarks, booking_time) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-            ps.setObject(1, b.getCustomerId(), Types.INTEGER);
-            ps.setObject(2, b.getVehicleId(), Types.INTEGER);
-            ps.setString(3, b.getDurationOfBooking());
-            ps.setObject(4, b.getSlotId(), Types.INTEGER);
-            ps.setInt(5, b.getBookingStatus() != null ? b.getBookingStatus() : Booking.STATUS_PENDING);
-            ps.setString(6, b.getRemarks());
-            ps.setObject(7, b.getUserId(), Types.INTEGER);
-            ps.setTimestamp(8, b.getBookingTime() != null
-                    ? b.getBookingTime()
-                    : new Timestamp(System.currentTimeMillis()));
+    try (Connection conn = getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            ps.setTimestamp(9, b.getExpectedArrival());
-            ps.setTimestamp(10, b.getActualArrival());
-            ps.setTimestamp(11, b.getDepartureTime());
-            ps.setObject(12, b.getTotalHours(), Types.DOUBLE);
-            ps.setObject(13, b.getTotalAmount(), Types.DOUBLE);
-            ps.setString(14, b.getBookingRef());
+        ps.setInt(1, b.getCustomerId());
+        ps.setInt(2, b.getVehicleId());
+        ps.setInt(3, b.getSlotId());
+        ps.setInt(4, Booking.STATUS_PENDING);
+        ps.setString(5, b.getDurationOfBooking());
+        ps.setString(6, b.getRemarks());
+        ps.setTimestamp(7, new Timestamp(System.currentTimeMillis()));
 
-            ps.executeUpdate();
-            ResultSet rs = ps.getGeneratedKeys();
-            return rs.next() ? rs.getInt(1) : null;
-        }
+        ps.executeUpdate();
+
+        ResultSet rs = ps.getGeneratedKeys();
+        return rs.next() ? rs.getInt(1) : 0;
     }
+}
+
 
     // ================= UPDATE =================
     public boolean update(Booking b) throws SQLException {
-        String sql = """
-            UPDATE inet_vehicleparking.tbl_booking SET
-            customer_id=?, vehicle_id=?, duration_of_booking=?,
-            slot_id=?, booking_status=?, remarks=?, user_id=?,
-            booking_time=?, expected_arrival=?, actual_arrival=?,
-            departure_time=?, total_hours=?, total_amount=?, booking_ref=?
-            WHERE booking_id=?
-        """;
+
+        String sql = "UPDATE " + getTableName() +
+                    " SET booking_status=? WHERE booking_id=?";
 
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+            PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setObject(1, b.getCustomerId(), Types.INTEGER);
-            ps.setObject(2, b.getVehicleId(), Types.INTEGER);
-            ps.setString(3, b.getDurationOfBooking());
-            ps.setObject(4, b.getSlotId(), Types.INTEGER);
-            ps.setInt(5, b.getBookingStatus());
-            ps.setString(6, b.getRemarks());
-            ps.setObject(7, b.getUserId(), Types.INTEGER);
-            ps.setTimestamp(8, b.getBookingTime());
-            ps.setTimestamp(9, b.getExpectedArrival());
-            ps.setTimestamp(10, b.getActualArrival());
-            ps.setTimestamp(11, b.getDepartureTime());
-            ps.setObject(12, b.getTotalHours(), Types.DOUBLE);
-            ps.setObject(13, b.getTotalAmount(), Types.DOUBLE);
-            ps.setString(14, b.getBookingRef());
-            ps.setInt(15, b.getBookingId());
+            ps.setInt(1, b.getBookingStatus());
+            ps.setInt(2, b.getBookingId());
 
-            return ps.executeUpdate() > 0;
+            boolean updated = ps.executeUpdate() > 0;
+
+            // ✅ Free slot when checkout
+            if (updated && b.getBookingStatus() == Booking.STATUS_CHECKED_OUT) {
+                ParkingSlotDAO slotDAO = new ParkingSlotDAO();
+                ParkingSlot slot = slotDAO.findById(b.getSlotId());
+                if (slot != null) {
+                    slot.setParkingSlotStatus(ParkingSlot.STATUS_AVAILABLE);
+                    slotDAO.updateStatus(slot);
+                }
+            }
+
+            return updated;
         }
     }
 
-    // ================= DELETE =================
-    public boolean delete(int id) throws SQLException {
-        String sql = "DELETE FROM " + getTableName() + " WHERE booking_id=?";
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, id);
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    // ================= COUNT =================
     public int countBookings() throws SQLException {
         String sql = "SELECT COUNT(*) FROM " + getTableName();
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery()) {
             return rs.next() ? rs.getInt(1) : 0;
         }
     }

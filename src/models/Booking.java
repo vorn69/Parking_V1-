@@ -3,7 +3,7 @@ package models;
 import java.sql.Timestamp;
 
 public class Booking {
-    // Status constants
+    // Booking status constants
     public static final int STATUS_PENDING = 0;
     public static final int STATUS_CHECKED_IN = 1;
     public static final int STATUS_CHECKED_OUT = 2;
@@ -23,12 +23,12 @@ public class Booking {
     private Double totalHours;
     private Double totalAmount;
 
-    // Relations (optional, for joins)
+    // Relations (optional)
     private User customer;
     private Vehicle vehicle;
     private ParkingSlot parkingSlot;
 
-    private String bookingRef; // For PaymentPanel use
+    private String bookingRef; // For payment reference
 
     public Booking() {}
 

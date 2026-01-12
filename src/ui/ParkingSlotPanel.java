@@ -1,6 +1,6 @@
 package ui;
 
-import dao.ParkingSlotDAO;
+import dao.*;
 import java.awt.*;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import models.ParkingSlot;
+import models.*;
 
 public class ParkingSlotPanel extends JPanel {
 
@@ -62,6 +62,18 @@ public class ParkingSlotPanel extends JPanel {
         refreshButton.addActionListener(e -> loadSlots());
         buttonPanel.add(refreshButton);
 
+        JButton reserveButton = new JButton("Reserve Slot");
+        reserveButton.addActionListener(e -> {
+            int selectedRow = slotTable.getSelectedRow();
+            if (selectedRow >= 0) {
+                ParkingSlot slot = slotList.get(selectedRow);
+                reserveSlot(slot);
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a slot first!");
+            }
+        });
+        buttonPanel.add(reserveButton);
+
         // Status Filter
         statusFilter = new JComboBox<>();
         statusFilter.addItem("All Statuses");
@@ -79,47 +91,36 @@ public class ParkingSlotPanel extends JPanel {
         slotTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int col) {
-                return col == 2; // Only Status editable
+                return false; // disable editing directly
             }
         };
 
-        slotTable = new JTable(slotTableModel);
+        slotTable = new JTable(slotTableModel) {
+            @Override
+            public Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int row, int column) {
+                Component comp = super.prepareRenderer(renderer, row, column);
+                int status = slotList.get(row).getParkingSlotStatus();
+
+                if (!isRowSelected(row)) {
+                    switch (status) {
+                        case ParkingSlot.STATUS_AVAILABLE -> comp.setBackground(new Color(198, 239, 206)); // green
+                        case ParkingSlot.STATUS_OCCUPIED -> comp.setBackground(new Color(255, 199, 206)); // red
+                        case ParkingSlot.STATUS_RESERVED -> comp.setBackground(new Color(255, 235, 156)); // yellow
+                        case ParkingSlot.STATUS_MAINTENANCE -> comp.setBackground(new Color(191, 191, 191)); // gray
+                    }
+                }
+                return comp;
+            }
+        };
+
         slotTable.setRowHeight(35);
         slotTable.getTableHeader().setBackground(TABLE_HEADER);
         slotTable.getTableHeader().setForeground(Color.WHITE);
 
-        // Center renderer for ID and Slot Number
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
         slotTable.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
         slotTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
-
-        // Status column editor
-        JComboBox<String> statusCombo = new JComboBox<>(statusOptions);
-        slotTable.getColumnModel().getColumn(2).setCellEditor(new DefaultCellEditor(statusCombo));
-
-        // Listen for status changes
-        slotTable.getModel().addTableModelListener(e -> {
-            if (e.getType() == javax.swing.event.TableModelEvent.UPDATE && e.getColumn() == 2) {
-                int row = e.getFirstRow();
-                Integer id = (Integer) slotTable.getValueAt(row, 0); // Get slot ID from table
-                ParkingSlot slot = slotList.stream()
-                        .filter(s -> s.getParkingSlotId().equals(id))
-                        .findFirst().orElse(null);
-
-                if (slot != null) {
-                    String newStatus = (String) slotTable.getValueAt(row, 2);
-                    slot.setStatusFromText(newStatus);
-                    try {
-                        slotDAO.updateStatus(slot); // Update DB
-                        updateInfoPanel();
-                    } catch (SQLException ex) {
-                        ex.printStackTrace();
-                        JOptionPane.showMessageDialog(this, "Failed to update status!");
-                    }
-                }
-            }
-        });
 
         JScrollPane scrollPane = new JScrollPane(slotTable);
         add(scrollPane, BorderLayout.CENTER);
@@ -156,7 +157,7 @@ public class ParkingSlotPanel extends JPanel {
         for (ParkingSlot slot : list) {
             slotTableModel.addRow(new Object[]{
                     slot.getParkingSlotId(),
-                    slot.getSlotNumber(),
+                    slot.getParkingSlotNumber(),
                     slot.getStatusText()
             });
         }
@@ -167,8 +168,12 @@ public class ParkingSlotPanel extends JPanel {
         int total = slotList.size();
         long available = slotList.stream().filter(s -> s.getParkingSlotStatus() == ParkingSlot.STATUS_AVAILABLE).count();
         long occupied = slotList.stream().filter(s -> s.getParkingSlotStatus() == ParkingSlot.STATUS_OCCUPIED).count();
+        long reserved = slotList.stream().filter(s -> s.getParkingSlotStatus() == ParkingSlot.STATUS_RESERVED).count();
 
-        infoLabel.setText("Total Slots: " + total + " | Available: " + available + " | Occupied: " + occupied);
+        infoLabel.setText("Total Slots: " + total +
+                " | Available: " + available +
+                " | Occupied: " + occupied +
+                " | Reserved: " + reserved);
         timestampLabel.setText("Last updated: " + new SimpleDateFormat("HH:mm:ss").format(new Date()));
     }
 
@@ -211,35 +216,86 @@ public class ParkingSlotPanel extends JPanel {
         }
     }
 
-    // Optional: Edit status via dialog
-    public void editSelectedSlot() {
-        int row = slotTable.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Select a slot to edit!");
+    // ====================== RESERVE SLOT + BOOKING + PAYMENT ======================
+    private void reserveSlot(ParkingSlot slot) {
+        if (!slot.isAvailable()) {
+            JOptionPane.showMessageDialog(this, "Slot is not available!");
             return;
         }
 
-        Integer id = (Integer) slotTable.getValueAt(row, 0);
-        ParkingSlot slot = slotList.stream().filter(s -> s.getParkingSlotId().equals(id)).findFirst().orElse(null);
-        if (slot == null) return;
+        try {
+            // ===== Select Customer =====
+            List<VehicleOwner> customers = new VehicleOwnerDAO().findAll();
+            String[] customerNames = customers.stream()
+                    .map(c -> c.getVehicleOwnerName() + " (" + c.getOwnerUsername() + ")")
+                    .toArray(String[]::new);
 
-        String newStatus = (String) JOptionPane.showInputDialog(this,
-                "Select new status for slot " + slot.getSlotNumber(),
-                "Edit Slot",
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                statusOptions,
-                slot.getStatusText());
+            String selectedCustomer = (String) JOptionPane.showInputDialog(
+                    this,
+                    "Select Customer:",
+                    "Reserve Slot",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    customerNames,
+                    customerNames[0]
+            );
 
-        if (newStatus != null) {
-            slot.setStatusFromText(newStatus);
-            try {
-                slotDAO.updateStatus(slot);
-                loadSlots();
-            } catch (SQLException e) {
-                e.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Failed to update slot!");
-            }
+            if (selectedCustomer == null) return;
+
+            VehicleOwner customer = customers.get(java.util.Arrays.asList(customerNames).indexOf(selectedCustomer));
+
+            // ===== Select Vehicle =====
+            List<Vehicle> vehicles = new VehicleDAO().findByOwnerId(customer.getVehicleOwnerId());
+            String[] vehicleNames = vehicles.stream()
+                    .map(v -> v.getVehiclePlateNumber() + " - " + v.getVehicleDescription())
+                    .toArray(String[]::new);
+
+            String selectedVehicle = (String) JOptionPane.showInputDialog(
+                    this,
+                    "Select Vehicle:",
+                    "Reserve Slot",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    vehicleNames,
+                    vehicleNames[0]
+            );
+
+            if (selectedVehicle == null) return;
+
+            Vehicle vehicle = vehicles.get(java.util.Arrays.asList(vehicleNames).indexOf(selectedVehicle));
+
+            // ===== Create Booking =====
+            Booking booking = new Booking();
+            booking.setCustomerId(customer.getVehicleOwnerId());
+            booking.setVehicleId(vehicle.getVehicleId());
+            booking.setSlotId(slot.getParkingSlotId());
+            booking.setBookingStatus(Booking.STATUS_PENDING);
+            booking.setBookingTime(new java.sql.Timestamp(System.currentTimeMillis()));
+
+            new BookingDAO().create(booking);
+
+            // ===== Create Payment =====
+        Payment payment = new Payment();
+        payment.setBookingId(booking.getBookingId());
+        payment.setDueAmount(0);   // instead of setAmountDue
+        payment.setPaidAmount(0);  // instead of setAmountPaid
+        payment.setPaymentStatus(Payment.STATUS_PENDING);
+        payment.setPaidBy(customer.getOwnerUsername());
+
+        new PaymentDAO().create(payment);
+
+
+            // ===== Update Slot =====
+            slot.setParkingSlotStatus(ParkingSlot.STATUS_RESERVED);
+            slot.setUserId(customer.getUserId());
+            slotDAO.updateStatus(slot);
+
+            JOptionPane.showMessageDialog(this, "Slot reserved, booking and payment created successfully!");
+            loadSlots();
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Failed to reserve slot: " + ex.getMessage());
         }
     }
 }
