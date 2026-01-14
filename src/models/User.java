@@ -62,4 +62,4 @@ public class User {
     
     public UserGroup getUserGroup() { return userGroup; }
     public void setUserGroup(UserGroup userGroup) { this.userGroup = userGroup; }
-}
+}   

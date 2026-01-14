@@ -24,8 +24,8 @@ public class AdminDashboard extends JFrame {
     // COLORS
     private final Color SIDEBAR = new Color(32, 34, 45);
     private final Color HEADER = new Color(45, 49, 66);
-    private final Color SIDEBAR_BTN_CLR = new Color(33, 150, 243); // Blue for all buttons
-    private final Color LOGOUT_CLR = new Color(220, 53, 69);  // Dark red
+    private final Color SIDEBAR_BTN_CLR = new Color(33, 150, 243);
+    private final Color LOGOUT_CLR = new Color(220, 53, 69);
     private final Color BG = new Color(245, 246, 250);
 
     public AdminDashboard() {
@@ -46,19 +46,16 @@ public class AdminDashboard extends JFrame {
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
 
-        // Add pages
         contentPanel.add(createDashboardPage(), "DASHBOARD");
         contentPanel.add(new BookingPanel(), "BOOKINGS");
         contentPanel.add(new PaymentPanel(), "PAYMENTS");
         contentPanel.add(new VehicleOwnerPanel(), "OWNERS");
         contentPanel.add(new ParkingSlotPanel(), "SLOTS");
-        contentPanel.add(new UserManagementPanel(), "USERS"); // <-- Added
+        contentPanel.add(new UserManagementPanel(), "USERS");
 
         add(contentPanel, BorderLayout.CENTER);
 
-        loadStats();
-        loadTable();
-
+        refreshDashboard();
         cardLayout.show(contentPanel, "DASHBOARD");
         setVisible(true);
     }
@@ -76,13 +73,12 @@ public class AdminDashboard extends JFrame {
         title.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
         panel.add(title);
 
-        // Sidebar buttons
         panel.add(menuBtn("Dashboard", "DASHBOARD", SIDEBAR_BTN_CLR));
         panel.add(menuBtn("Bookings", "BOOKINGS", SIDEBAR_BTN_CLR));
         panel.add(menuBtn("Payments", "PAYMENTS", SIDEBAR_BTN_CLR));
         panel.add(menuBtn("Owners", "OWNERS", SIDEBAR_BTN_CLR));
         panel.add(menuBtn("Parking Slots", "SLOTS", SIDEBAR_BTN_CLR));
-        panel.add(menuBtn("User Management", "USERS", SIDEBAR_BTN_CLR)); // <-- Added
+        panel.add(menuBtn("User Management", "USERS", SIDEBAR_BTN_CLR));
         panel.add(Box.createVerticalStrut(20));
         panel.add(menuBtn("Logout", null, LOGOUT_CLR));
 
@@ -110,9 +106,6 @@ public class AdminDashboard extends JFrame {
             } else {
                 cardLayout.show(contentPanel, page);
                 if ("DASHBOARD".equals(page)) refreshDashboard();
-                if ("USERS".equals(page)) {
-                    // ((UserManagementPanel) contentPanel.getComponent(5)).refreshTable(); // <-- refresh DB
-                }
             }
         });
 
@@ -143,10 +136,10 @@ public class AdminDashboard extends JFrame {
         JPanel stats = new JPanel(new GridLayout(1, 4, 15, 15));
         stats.setOpaque(false);
 
-        lblBookings = createCard(new Color(33, 150, 243));   // Blue
-        lblVehicles = createCard(new Color(0, 200, 83));     // Green
-        lblOwners   = createCard(new Color(255, 193, 7));    // Yellow
-        lblSlots    = createCard(new Color(244, 67, 54));    // Red
+        lblBookings = createCard(new Color(33, 150, 243));
+        lblVehicles = createCard(new Color(0, 200, 83));
+        lblOwners   = createCard(new Color(255, 193, 7));
+        lblSlots    = createCard(new Color(244, 67, 54));
 
         stats.add(lblBookings);
         stats.add(lblVehicles);
@@ -182,7 +175,6 @@ public class AdminDashboard extends JFrame {
 
     private void loadStats() {
         try {
-            // lblBookings.setText(cardText("Bookings", bookingDAO.countBookings()));
             lblBookings.setText(cardText("Bookings", bookingDAO.countBookings()));
             lblVehicles.setText(cardText("Vehicles", vehicleDAO.countVehicles()));
             lblOwners.setText(cardText("Owners", ownerDAO.countOwners()));
@@ -195,21 +187,36 @@ public class AdminDashboard extends JFrame {
     private void loadTable() {
         try {
             List<Booking> list = bookingDAO.findAll();
+
             DefaultTableModel model = new DefaultTableModel(
-                    new String[]{"ID", "Customer", "Slot", "Status"}, 0
+                    new String[]{"Booking ID", "Customer ID", "Slot ID", "Status"}, 0
             );
 
             for (Booking b : list) {
                 model.addRow(new Object[]{
                         b.getBookingId(),
-                        b.getCustomer() != null ? b.getCustomer().getFullname() : "-",
-                        b.getParkingSlot() != null ? b.getParkingSlot().getSlotNumber() : "-",
-                        b.getBookingStatus()
+                        b.getCustomerId(),
+                        b.getSlotId(),
+                        bookingStatusText(b.getBookingStatus())
                 });
             }
+
             table.setModel(model);
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    private String bookingStatusText(int status) {
+        switch (status) {
+            case Booking.STATUS_PENDING:
+                return "PENDING";
+            case Booking.STATUS_APPROVED:
+                return "APPROVED";
+            case Booking.STATUS_CHECKED_IN:
+                return "CHECKED IN";
+            default:
+                return "UNKNOWN";
         }
     }
 

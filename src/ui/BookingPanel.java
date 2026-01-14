@@ -12,55 +12,56 @@ import models.Booking;
 
 public class BookingPanel extends JPanel {
 
-    private BookingDAO bookingDAO = new BookingDAO();
-    private List<Booking> bookingData;
+    private final BookingDAO bookingDAO = new BookingDAO();
+    private List<Booking> bookingList;
 
-    private DefaultTableModel bookingTableModel;
-    private JTable bookingTable;
+    private JTable table;
+    private DefaultTableModel model;
 
     private JLabel infoLabel;
-    private JLabel timestampLabel;
+    private JLabel timeLabel;
 
-    private final Color MAIN_BG = new Color(245, 247, 250);
-    private final Color CARD_BG = Color.WHITE;
-    private final Color TABLE_HEADER = new Color(60, 64, 72);
-    private final Color BOTTOM_BG = Color.BLACK;
-    private final Color BOTTOM_TEXT = Color.WHITE;
+    // TEMP: replace later with real logged-in admin id
+    private final int ADMIN_USER_ID = 1;
 
     public BookingPanel() {
-        setLayout(new BorderLayout(20, 20));
-        setBackground(MAIN_BG);
-        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setLayout(new BorderLayout(15, 15));
+        setBackground(new Color(245, 247, 250));
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        createHeaderPanel();
-        createTablePanel();
-        createInfoPanel();
-        refreshTable();
+        add(createHeader(), BorderLayout.NORTH);
+        add(createTable(), BorderLayout.CENTER);
+        add(createFooter(), BorderLayout.SOUTH);
+
+        loadData();
     }
 
     // ================= HEADER =================
-    private void createHeaderPanel() {
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(MAIN_BG);
+    private JPanel createHeader() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
 
-        JLabel titleLabel = new JLabel("BOOKING MANAGEMENT");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        headerPanel.add(titleLabel, BorderLayout.WEST);
+        JLabel title = new JLabel("BOOKING MANAGEMENT");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        panel.add(title, BorderLayout.WEST);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(MAIN_BG);
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnPanel.setOpaque(false);
 
-        JButton addBtn = createButton("+ ADD BOOKING", new Color(76, 175, 80));
-        addBtn.addActionListener(e -> showAddBookingDialog());
+        JButton approveBtn = createButton("APPROVE", new Color(76, 175, 80));
+        JButton rejectBtn  = createButton("REJECT", new Color(244, 67, 54));
+        JButton refreshBtn = createButton("REFRESH", new Color(33, 150, 243));
 
-        JButton refreshBtn = createButton("⟳ REFRESH", new Color(33, 150, 243));
-        refreshBtn.addActionListener(e -> refreshTable());
+        approveBtn.addActionListener(e -> approveBooking());
+        rejectBtn.addActionListener(e -> rejectBooking());
+        refreshBtn.addActionListener(e -> loadData());
 
-        buttonPanel.add(addBtn);
-        buttonPanel.add(refreshBtn);
+        btnPanel.add(approveBtn);
+        btnPanel.add(rejectBtn);
+        btnPanel.add(refreshBtn);
 
-        headerPanel.add(buttonPanel, BorderLayout.EAST);
-        add(headerPanel, BorderLayout.NORTH);
+        panel.add(btnPanel, BorderLayout.EAST);
+        return panel;
     }
 
     private JButton createButton(String text, Color color) {
@@ -73,122 +74,122 @@ public class BookingPanel extends JPanel {
     }
 
     // ================= TABLE =================
-    private void createTablePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(CARD_BG);
-
-        bookingTableModel = new DefaultTableModel(
-            new String[]{"ID", "Customer ID", "Vehicle ID", "Slot ID", "Duration", "Status", "Remarks"},
+    private JScrollPane createTable() {
+        model = new DefaultTableModel(
+            new String[]{"Booking ID", "Customer ID", "Slot ID", "Duration", "Status"},
             0
         ) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
 
-        bookingTable = new JTable(bookingTableModel);
-        bookingTable.setRowHeight(30);
-        bookingTable.getTableHeader().setBackground(TABLE_HEADER);
-        bookingTable.getTableHeader().setForeground(Color.WHITE);
-
-        panel.add(new JScrollPane(bookingTable), BorderLayout.CENTER);
-        add(panel, BorderLayout.CENTER);
+        table = new JTable(model);
+        table.setRowHeight(30);
+        return new JScrollPane(table);
     }
 
-    // ================= INFO =================
-    private void createInfoPanel() {
+    // ================= FOOTER =================
+    private JPanel createFooter() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(BOTTOM_BG);
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panel.setBackground(Color.BLACK);
+        panel.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
 
         infoLabel = new JLabel();
-        infoLabel.setForeground(BOTTOM_TEXT);
+        infoLabel.setForeground(Color.WHITE);
 
-        timestampLabel = new JLabel();
-        timestampLabel.setForeground(Color.LIGHT_GRAY);
+        timeLabel = new JLabel();
+        timeLabel.setForeground(Color.LIGHT_GRAY);
 
         panel.add(infoLabel, BorderLayout.WEST);
-        panel.add(timestampLabel, BorderLayout.EAST);
-
-        add(panel, BorderLayout.SOUTH);
+        panel.add(timeLabel, BorderLayout.EAST);
+        return panel;
     }
 
     // ================= LOAD DATA =================
-    private void refreshTable() {
+    private void loadData() {
         try {
-            bookingData = bookingDAO.findAll();
-            bookingTableModel.setRowCount(0);
+            bookingList = bookingDAO.findAll();
+            model.setRowCount(0);
 
-            for (Booking b : bookingData) {
-                bookingTableModel.addRow(new Object[]{
+            for (Booking b : bookingList) {
+                model.addRow(new Object[]{
                     b.getBookingId(),
                     b.getCustomerId(),
-                    b.getVehicleId(),
                     b.getSlotId(),
                     b.getDurationOfBooking(),
-                    b.getBookingStatus(),
-                    b.getRemarks()
+                    statusText(b.getBookingStatus())
                 });
             }
 
-            updateInfoPanel();
+            updateFooter();
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, e.getMessage(), "DB Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void updateInfoPanel() {
-        if (bookingData == null) return;
+    private void updateFooter() {
+        long pending = bookingList.stream()
+                .filter(b -> b.getBookingStatus() == Booking.STATUS_PENDING)
+                .count();
 
-        long pending = bookingData.stream().filter(b -> b.getBookingStatus() == Booking.STATUS_PENDING).count();
-        long in = bookingData.stream().filter(b -> b.getBookingStatus() == Booking.STATUS_CHECKED_IN).count();
-        long out = bookingData.stream().filter(b -> b.getBookingStatus() == Booking.STATUS_CHECKED_OUT).count();
-
-        infoLabel.setText("Total: " + bookingData.size()
-                + " | Pending: " + pending
-                + " | In: " + in
-                + " | Out: " + out);
-
-        timestampLabel.setText("Updated: " +
+        infoLabel.setText("Total: " + bookingList.size() + " | Pending: " + pending);
+        timeLabel.setText("Updated: " +
                 new SimpleDateFormat("HH:mm:ss").format(new Date()));
     }
 
-    // ================= ADD BOOKING =================
-    private void showAddBookingDialog() {
-        JTextField customerId = new JTextField();
-        JTextField vehicleId = new JTextField();
-        JTextField slotId = new JTextField();
-        JTextField duration = new JTextField();
-        JTextField remarks = new JTextField();
-
-        Object[] fields = {
-            "Customer ID:", customerId,
-            "Vehicle ID:", vehicleId,
-            "Slot ID:", slotId,
-            "Duration:", duration,
-            "Remarks:", remarks
+    private String statusText(int status) {
+        return switch (status) {
+            case Booking.STATUS_PENDING  -> "PENDING";
+            case Booking.STATUS_APPROVED -> "APPROVED";
+            case Booking.STATUS_REJECTED -> "REJECTED";
+            default -> "UNKNOWN";
         };
+    }
 
-        int opt = JOptionPane.showConfirmDialog(
-            this, fields, "Add Booking", JOptionPane.OK_CANCEL_OPTION
-        );
+    // ================= ACTIONS =================
+    private void approveBooking() {
+        int row = table.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Select a booking first");
+            return;
+        }
 
-        if (opt == JOptionPane.OK_OPTION) {
-            try {
-                Booking b = new Booking();
-                b.setCustomerId(Integer.parseInt(customerId.getText()));
-                b.setVehicleId(Integer.parseInt(vehicleId.getText()));
-                b.setSlotId(Integer.parseInt(slotId.getText()));
-                b.setDurationOfBooking(duration.getText());
-                b.setRemarks(remarks.getText());
-                b.setBookingStatus(Booking.STATUS_PENDING);
-                b.setBookingTime(new java.sql.Timestamp(System.currentTimeMillis()));
+        Booking b = bookingList.get(row);
+        if (b.getBookingStatus() != Booking.STATUS_PENDING) {
+            JOptionPane.showMessageDialog(this, "Only pending bookings can be approved");
+            return;
+        }
 
-                bookingDAO.create(b); // ✅ INSERT TO DB
-                refreshTable();
+        try {
+            bookingDAO.approveBooking(
+                b.getBookingId(),
+                ADMIN_USER_ID
+            );
+            loadData();
+            JOptionPane.showMessageDialog(this, "Booking approved & payment created");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
-                JOptionPane.showMessageDialog(this, "Booking added successfully");
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Invalid input", "Error", JOptionPane.ERROR_MESSAGE);
-            }
+    private void rejectBooking() {
+        int row = table.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Select a booking first");
+            return;
+        }
+
+        Booking b = bookingList.get(row);
+        if (b.getBookingStatus() != Booking.STATUS_PENDING) {
+            JOptionPane.showMessageDialog(this, "Only pending bookings can be rejected");
+            return;
+        }
+
+        try {
+            bookingDAO.rejectBooking(b.getBookingId(), b.getSlotId());
+            loadData();
+            JOptionPane.showMessageDialog(this, "Booking rejected & slot freed");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

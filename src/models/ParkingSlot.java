@@ -10,10 +10,21 @@ public class ParkingSlot {
     private User user; // Optional, for joined queries
 
     // Status constants
-    public static final int STATUS_AVAILABLE = 0;
-    public static final int STATUS_OCCUPIED = 1;
-    public static final int STATUS_RESERVED = 2;
-    public static final int STATUS_MAINTENANCE = 3;
+    public static final int STATUS_AVAILABLE = 0; // show to user
+    public static final int STATUS_RESERVED  = 1; // booked, waiting approval
+    public static final int STATUS_OCCUPIED  = 2; // car parked
+
+    // fields, getters, setters
+
+    public boolean isAvailable() {
+        return parkingSlotStatus == STATUS_AVAILABLE;
+    }
+
+    @Override
+    public String toString() {
+        return "Slot #" + parkingSlotNumber + " (" + zone + ")";
+    }
+
 
     // Constructors
     public ParkingSlot() {}
@@ -22,6 +33,7 @@ public class ParkingSlot {
         this.parkingSlotNumber = parkingSlotNumber;
         this.parkingSlotStatus = STATUS_AVAILABLE;
     }
+
 
     // Getters & Setters
     public Integer getParkingSlotId() { return parkingSlotId; }
@@ -50,25 +62,13 @@ public class ParkingSlot {
     }
 
     // Helper methods
-    public boolean isAvailable() { return parkingSlotStatus == STATUS_AVAILABLE; }
 
     public String getStatusText() {
         return switch (parkingSlotStatus) {
-            case STATUS_AVAILABLE -> "Available";
-            case STATUS_OCCUPIED -> "Occupied";
-            case STATUS_RESERVED -> "Reserved";
-            case STATUS_MAINTENANCE -> "Maintenance";
-            default -> "Unknown";
-        };
-    }
-
-    public void setStatusFromText(String text) {
-        this.parkingSlotStatus = switch (text) {
-            case "Available" -> STATUS_AVAILABLE;
-            case "Occupied" -> STATUS_OCCUPIED;
-            case "Reserved" -> STATUS_RESERVED;
-            case "Maintenance" -> STATUS_MAINTENANCE;
-            default -> STATUS_AVAILABLE;
+            case STATUS_AVAILABLE -> "AVAILABLE";
+            case STATUS_RESERVED  -> "RESERVED";
+            case STATUS_OCCUPIED  -> "OCCUPIED";
+            default -> "UNKNOWN";
         };
     }
 }

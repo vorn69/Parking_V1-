@@ -4,6 +4,7 @@ import dao.UserDAO;
 import java.awt.*;
 import java.sql.SQLException;
 import javax.swing.*;
+import models.User;
 
 public class LoginFrame extends JFrame {
 
@@ -54,17 +55,32 @@ public class LoginFrame extends JFrame {
         }
 
         try {
-            boolean authenticated = userDAO.authenticate(username, password);
-            if (authenticated) {
-                // Open Admin Dashboard
-                SwingUtilities.invokeLater(() -> {
-                    AdminDashboard dashboard = new AdminDashboard();
-                    dashboard.setVisible(true);
-                });
-                this.dispose(); // close login window
-            } else {
+            User user = userDAO.login(username, password);
+
+            if (user == null) {
                 JOptionPane.showMessageDialog(this, "Invalid username or password.");
+                return;
             }
+
+            int groupId = user.getUserGroupId() != null ? user.getUserGroupId() : 0;
+
+            // ===== ADMIN =====
+            if (groupId == 1) {
+                SwingUtilities.invokeLater(() -> {
+                    new AdminDashboard().setVisible(true);
+                });
+            }
+            // ===== CUSTOMER =====
+            else {
+                int ownerId = userDAO.findOwnerIdByUserId(user.getUserId());
+
+                SwingUtilities.invokeLater(() -> {
+                    new CustomerDashboard(user.getUserId(), ownerId).setVisible(true);
+                });
+            }
+
+            dispose(); // close login window
+
         } catch (SQLException ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage());

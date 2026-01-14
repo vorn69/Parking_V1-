@@ -12,15 +12,15 @@ public class Payment {
     private double paidAmount;
     private String method;         // payment method
     private Date paymentDate;
-    private int paymentStatus;     // 0 = pending, 1 = paid
-    private String paidBy;         // customer username
+        private int paymentStatus;     // 0 = pending, 1 = paid
+        private String paidBy;         // customer username
     private Integer userId;
     private String remarks;
 
     // Status constants
-public static final int STATUS_PENDING = 0;
-public static final int STATUS_SUCCESS = 1;
-public static final int STATUS_FAILED = 2;
+    public static final int STATUS_PENDING = 0;
+    public static final int STATUS_PAID = 1;
+
 
     // Getters & Setters
     public Integer getPaymentId() { return paymentId; }

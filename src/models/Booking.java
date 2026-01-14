@@ -3,10 +3,13 @@ package models;
 import java.sql.Timestamp;
 
 public class Booking {
-    // Booking status constants
+        // Booking status constants
     public static final int STATUS_PENDING = 0;
-    public static final int STATUS_CHECKED_IN = 1;
-    public static final int STATUS_CHECKED_OUT = 2;
+    public static final int STATUS_APPROVED = 1;
+    public static final int STATUS_CHECKED_IN = 2;
+    public static final int STATUS_CHECKED_OUT = 3;
+    public static final int STATUS_REJECTED = 4;
+
 
     private Integer bookingId;
     private Integer customerId;

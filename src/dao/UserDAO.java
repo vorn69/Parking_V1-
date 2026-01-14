@@ -62,10 +62,10 @@ public class UserDAO extends BaseDAO<User> {
 
     public boolean authenticate(String username, String password) throws SQLException {
         String sql = "SELECT COUNT(*) FROM " + getTableName() +
-                     " WHERE username = ? AND password = ? AND status = 1";
+                    " WHERE username = ? AND password = ? AND status = 1";
 
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, username);
             pstmt.setString(2, password);
@@ -80,8 +80,8 @@ public class UserDAO extends BaseDAO<User> {
     // ========================= CRUD =========================
     public Integer create(User user) throws SQLException {
         String sql = "INSERT INTO " + getTableName() +
-                     " (username, password, avatar, fullname, contact, email, user_group_id, status, created_at) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
+                    " (username, password, avatar, fullname, contact, email, user_group_id, status, created_at) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -117,6 +117,41 @@ public class UserDAO extends BaseDAO<User> {
             }
         }
     }
+
+        public User login(String username, String password) throws SQLException {
+        String sql = "SELECT * FROM inet_vehicleparking.tbl_user WHERE username=? AND password=? AND status=1";
+
+        try (Connection conn = getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, username);
+            ps.setString(2, password);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    User u = new User();
+                    u.setUserId(rs.getInt("user_id"));
+                    u.setUsername(rs.getString("username"));
+                    u.setUserGroupId((Integer) rs.getObject("user_group_id"));
+                    return u;
+                }
+            }
+        }
+        return null;
+    }
+
+    public int findOwnerIdByUserId(int userId) throws SQLException {
+    String sql = "SELECT vehicle_owner_id FROM inet_vehicleparking.tbl_vehicle_owner WHERE user_id=?";
+    try (Connection conn = getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+
+        ps.setInt(1, userId);
+        try (ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+}
+
 
     public boolean update(User user) throws SQLException {
         String sql = "UPDATE " + getTableName() + " SET " +

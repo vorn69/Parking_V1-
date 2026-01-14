@@ -3,9 +3,7 @@ package ui;
 import dao.PaymentDAO;
 import java.awt.*;
 import java.sql.SQLException;
-import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import models.Payment;
@@ -14,23 +12,20 @@ public class PaymentPanel extends JPanel {
 
     private JTable table;
     private DefaultTableModel model;
-    private PaymentDAO paymentDAO;
+    private PaymentDAO paymentDAO = new PaymentDAO();
 
-    // Colors (dashboard style)
     private final Color BG = new Color(245, 247, 250);
     private final Color CARD = Color.WHITE;
     private final Color BLUE = new Color(33, 150, 243);
     private final Color GREEN = new Color(76, 175, 80);
-    private final Color ORANGE = new Color(255, 152, 0);
 
     public PaymentPanel() {
-        paymentDAO = new PaymentDAO();
-        setLayout(new BorderLayout(20, 20));
+        setLayout(new BorderLayout(15, 15));
         setBackground(BG);
-        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         add(createHeader(), BorderLayout.NORTH);
-        add(createTableCard(), BorderLayout.CENTER);
+        add(createTable(), BorderLayout.CENTER);
 
         loadPayments();
     }
@@ -38,81 +33,52 @@ public class PaymentPanel extends JPanel {
     // ================= HEADER =================
     private JPanel createHeader() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(BG);
+        panel.setOpaque(false);
 
-        JLabel title = new JLabel("Payment Management");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        JLabel title = new JLabel("PAYMENTS");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
 
-        JButton addBtn = new JButton("+ Add Payment");
+        JButton addBtn = new JButton("+ ADD PAYMENT");
         addBtn.setBackground(GREEN);
         addBtn.setForeground(Color.WHITE);
         addBtn.setFocusPainted(false);
-        addBtn.addActionListener(e -> showAddDialog());
+        addBtn.addActionListener(e -> addPayment());
 
         panel.add(title, BorderLayout.WEST);
         panel.add(addBtn, BorderLayout.EAST);
-
         return panel;
     }
 
-    // ================= TABLE CARD =================
-    private JPanel createTableCard() {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setBackground(CARD);
-        card.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-
+    // ================= TABLE =================
+    private JScrollPane createTable() {
         model = new DefaultTableModel(
-                new String[]{
-                        "Ref No", "Booking Ref", "User ID",
-                        "Due", "Paid", "Method", "Date", "Remarks"
-                }, 0
-        );
+            new String[]{"Payment ID", "Booking ID", "User ID", "Due", "Paid", "Status", "Paid By", "Remarks"},
+            0
+        ) {
+            public boolean isCellEditable(int r, int c) { return false; }
+        };
 
         table = new JTable(model);
         table.setRowHeight(30);
-        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
 
-        JScrollPane scroll = new JScrollPane(table);
-        card.add(scroll, BorderLayout.CENTER);
-
-        // Bottom buttons
-        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        bottom.setBackground(CARD);
-
-        // Refresh
-        JButton refreshBtn = new JButton("Refresh");
-        refreshBtn.setBackground(BLUE);
-        refreshBtn.setForeground(Color.WHITE);
-        refreshBtn.addActionListener(e -> loadPayments());
-        bottom.add(refreshBtn);
-
-        // Invoice
-        JButton invoiceBtn = new JButton("Invoice");
-        invoiceBtn.setBackground(ORANGE);
-        invoiceBtn.setForeground(Color.WHITE);
-        invoiceBtn.addActionListener(e -> showInvoice());
-        bottom.add(invoiceBtn);
-
-        card.add(bottom, BorderLayout.SOUTH);
-
-        return card;
+        return new JScrollPane(table);
     }
 
-    // ================= LOAD DATA =================
+    // ================= LOAD =================
     private void loadPayments() {
         model.setRowCount(0);
         try {
             List<Payment> list = paymentDAO.findAll();
             for (Payment p : list) {
                 model.addRow(new Object[]{
-                        p.getRefNo(),
-                        p.getBookingRef(),
-                        p.getUserId(),
-                        p.getDueAmount(),
-                        p.getPaidAmount(),
-                        p.getMethod(),
-                        p.getPaymentDate(),
-                        p.getRemarks()
+                    p.getPaymentId(),
+                    p.getBookingId(),
+                    p.getUserId(),
+                    p.getDueAmount(),
+                    p.getPaidAmount(),
+                    paymentStatusText(p.getPaymentStatus()),
+                    p.getPaidBy(),
+                    p.getRemarks()
                 });
             }
         } catch (SQLException e) {
@@ -120,76 +86,50 @@ public class PaymentPanel extends JPanel {
         }
     }
 
+    private String paymentStatusText(int status) {
+        return status == Payment.STATUS_PAID ? "PAID" : "PENDING";
+    }
+
     // ================= ADD PAYMENT =================
-    private void showAddDialog() {
-        JTextField bookingRef = new JTextField();
+    private void addPayment() {
+        JTextField bookingId = new JTextField();
         JTextField userId = new JTextField();
         JTextField due = new JTextField();
         JTextField paid = new JTextField();
-        JComboBox<String> method = new JComboBox<>(new String[]{"CASH", "CARD", "ABA", "ACLED"});
+        JTextField paidBy = new JTextField();
         JTextField remarks = new JTextField();
 
         Object[] fields = {
-                "Booking Ref:", bookingRef,
-                "User ID:", userId,
-                "Due Amount:", due,
-                "Paid Amount:", paid,
-                "Method:", method,
-                "Remarks:", remarks
+            "Booking ID:", bookingId,
+            "User ID:", userId,
+            "Amount Due:", due,
+            "Amount Paid:", paid,
+            "Paid By:", paidBy,
+            "Remarks:", remarks
         };
 
         int opt = JOptionPane.showConfirmDialog(
-                this, fields, "Add Payment",
-                JOptionPane.OK_CANCEL_OPTION
+            this, fields, "Add Payment", JOptionPane.OK_CANCEL_OPTION
         );
 
         if (opt == JOptionPane.OK_OPTION) {
             try {
                 Payment p = new Payment();
-                p.setRefNo("PAY-" + UUID.randomUUID().toString().substring(0, 8));
-                p.setBookingRef(bookingRef.getText());
+                p.setBookingId(Integer.parseInt(bookingId.getText()));
                 p.setUserId(Integer.parseInt(userId.getText()));
                 p.setDueAmount(Double.parseDouble(due.getText()));
                 p.setPaidAmount(Double.parseDouble(paid.getText()));
-                p.setMethod(method.getSelectedItem().toString());
-                p.setPaymentDate(new Date());
+                p.setPaymentStatus(Payment.STATUS_PAID);
+                p.setPaidBy(paidBy.getText());
                 p.setRemarks(remarks.getText());
 
-                paymentDAO.insertPayment(p);
+                paymentDAO.create(p);
                 loadPayments();
 
-                JOptionPane.showMessageDialog(this, "Payment added successfully!");
+                JOptionPane.showMessageDialog(this, "Payment saved successfully");
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Invalid input!", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Invalid input", "Error", JOptionPane.ERROR_MESSAGE);
             }
-        }
-    }
-
-    // ================= SHOW INVOICE =================
-    private void showInvoice() {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Please select a payment first.", "No selection", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        String refNo = table.getValueAt(selectedRow, 0).toString(); // Ref No
-
-        try {
-            Payment payment = paymentDAO.findByRefNo(refNo); // Fetch payment from DB
-            if (payment != null) {
-                JFrame invoiceFrame = new JFrame("Invoice - " + payment.getRefNo());
-                invoiceFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                invoiceFrame.setSize(500, 600);
-                invoiceFrame.setLocationRelativeTo(this);
-                invoiceFrame.add(new InvoicePanel(payment)); // Pass payment
-                invoiceFrame.setVisible(true);
-            } else {
-                JOptionPane.showMessageDialog(this, "Payment not found.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error loading invoice: " + ex.getMessage(), "DB Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

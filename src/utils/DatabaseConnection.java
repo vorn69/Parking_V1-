@@ -39,9 +39,7 @@ public class DatabaseConnection {
             } catch (SQLException e) {
                 System.err.println("Failed to establish database connection!");
                 System.err.println("Error: " + e.getMessage());
-                System.err.println("URL: " + URL);
-                System.err.println("User: " + DB_USER);
-                throw e;
+                throw new RuntimeException("PostgreSQL JDBC Driver not found!", e);
             }
         }
         return connection;
