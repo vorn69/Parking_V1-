@@ -19,6 +19,12 @@ public class Vehicle {
         this.vehicleOwnerId = vehicleOwnerId;
     }
 
+    @Override
+    public String toString() {
+        return vehiclePlateNumber + " - " + vehicleDescription;
+    }
+
+
     // Getters and Setters
     public Integer getVehicleId() { return vehicleId; }
     public void setVehicleId(Integer vehicleId) { this.vehicleId = vehicleId; }

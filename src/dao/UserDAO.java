@@ -60,6 +60,8 @@ public class UserDAO extends BaseDAO<User> {
         }
     }
 
+    
+
     public boolean authenticate(String username, String password) throws SQLException {
         String sql = "SELECT COUNT(*) FROM " + getTableName() +
                     " WHERE username = ? AND password = ? AND status = 1";
@@ -118,8 +120,13 @@ public class UserDAO extends BaseDAO<User> {
         }
     }
 
-        public User login(String username, String password) throws SQLException {
-        String sql = "SELECT * FROM inet_vehicleparking.tbl_user WHERE username=? AND password=? AND status=1";
+    public User login(String username, String password) throws SQLException {
+
+        String sql = """
+            SELECT user_id, username, user_group_id
+            FROM inet_vehicleparking.tbl_user
+            WHERE username = ? AND password = ? AND status = 1
+        """;
 
         try (Connection conn = getConnection();
             PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -127,18 +134,18 @@ public class UserDAO extends BaseDAO<User> {
             ps.setString(1, username);
             ps.setString(2, password);
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    User u = new User();
-                    u.setUserId(rs.getInt("user_id"));
-                    u.setUsername(rs.getString("username"));
-                    u.setUserGroupId((Integer) rs.getObject("user_group_id"));
-                    return u;
-                }
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                User u = new User();
+                u.setUserId(rs.getInt("user_id"));
+                u.setUsername(rs.getString("username"));
+                u.setUserGroupId(rs.getInt("user_group_id"));
+                return u;
             }
         }
         return null;
     }
+
 
     public int findOwnerIdByUserId(int userId) throws SQLException {
     String sql = "SELECT vehicle_owner_id FROM inet_vehicleparking.tbl_vehicle_owner WHERE user_id=?";

@@ -34,16 +34,22 @@ public List<ParkingSlot> findAll() throws SQLException {
     List<ParkingSlot> list = new ArrayList<>();
     String sql = "SELECT * FROM inet_vehicleparking.tbl_parking_slot ORDER BY parking_slot_number";
 
-    try (Connection conn = getConnection();
-         PreparedStatement ps = conn.prepareStatement(sql);
+    try (Connection c = getConnection();
+         PreparedStatement ps = c.prepareStatement(sql);
          ResultSet rs = ps.executeQuery()) {
 
         while (rs.next()) {
-            list.add(mapResultSetToEntity(rs));
+            ParkingSlot s = new ParkingSlot();
+            s.setParkingSlotId(rs.getInt("parking_slot_id"));
+            s.setParkingSlotNumber(rs.getInt("parking_slot_number"));
+            s.setParkingSlotStatus(rs.getInt("parking_slot_status"));
+            s.setUserId((Integer) rs.getObject("user_id"));
+            list.add(s);
         }
     }
     return list;
 }
+
 
     // ================= CREATE =================
     public void create(ParkingSlot slot) throws SQLException {
@@ -113,5 +119,44 @@ public List<ParkingSlot> findAll() throws SQLException {
         return list;
     }
 
+        public void reserveSlot(int slotId, int userId) throws SQLException {
 
+        String sql = """
+            UPDATE inet_vehicleparking.tbl_parking_slot
+            SET parking_slot_status = ?, user_id = ?
+            WHERE parking_slot_id = ?
+        """;
+
+        try (Connection conn = getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, ParkingSlot.STATUS_RESERVED);
+            ps.setInt(2, userId);
+            ps.setInt(3, slotId);
+
+            ps.executeUpdate();
+        }
+    }
+
+    // public boolean reserveSlot(int slotId, int userId) throws SQLException {
+    // String sql = """
+    //     UPDATE inet_vehicleparking.tbl_parking_slot
+    //     SET parking_slot_status=?, user_id=?
+    //     WHERE parking_slot_id=? AND parking_slot_status=?
+    // """;
+
+    // try (Connection conn = getConnection();
+    //      PreparedStatement ps = conn.prepareStatement(sql)) {
+
+    //     ps.setInt(1, ParkingSlot.STATUS_RESERVED);
+    //     ps.setInt(2, userId);
+    //     ps.setInt(3, slotId);
+    //     ps.setInt(4, ParkingSlot.STATUS_AVAILABLE);
+
+    //     ps.executeUpdate() > 0;
+    // }
 }
+
+
+
+

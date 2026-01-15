@@ -1,13 +1,12 @@
 package ui;
 
-import javax.swing.*;
-import javax.swing.table.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.sql.SQLException;
-import java.util.List;
 import dao.UserDAO;
 import dao.UserGroupDAO;
+import java.awt.*;
+import java.sql.SQLException;
+import java.util.List;
+import javax.swing.*;
+import javax.swing.table.*;
 import models.User;
 import models.UserGroup;
 

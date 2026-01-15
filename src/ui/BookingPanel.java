@@ -107,7 +107,7 @@ public class BookingPanel extends JPanel {
     // ================= LOAD DATA =================
     private void loadData() {
         try {
-            bookingList = bookingDAO.findAll();
+            bookingList = bookingDAO.findPendingBookings();
             model.setRowCount(0);
 
             for (Booking b : bookingList) {

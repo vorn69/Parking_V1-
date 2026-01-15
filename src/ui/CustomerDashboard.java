@@ -32,7 +32,7 @@ public class CustomerDashboard extends JFrame {
         contentPanel = new JPanel(cardLayout);
 
         // Add panels (ALL LOGIC IS INSIDE THESE PANELS)
-        contentPanel.add(new UserBookingPanel(userId, ownerId), "BOOK");
+        contentPanel.add(new UserParkingMapPanel(userId, ownerId), "BOOK");
         contentPanel.add(new UserMyBookingsPanel(userId), "MY_BOOKINGS");
         contentPanel.add(new UserMyPaymentsPanel(userId), "MY_PAYMENTS");
 

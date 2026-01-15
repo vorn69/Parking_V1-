@@ -24,4 +24,4 @@ public abstract class BaseDAO<T> {
     protected abstract T mapResultSetToEntity(ResultSet rs) throws SQLException;
     protected abstract String getTableName();
     protected abstract String getIdColumnName();
-}
+}   

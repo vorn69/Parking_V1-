@@ -31,22 +31,36 @@ public class PaymentDAO extends BaseDAO<Payment> {
         return p;
     }
 
-    public List<Payment> findByUserId(int userId) throws SQLException {
+ public List<Payment> findByUserId(int userId) throws SQLException {
     List<Payment> list = new ArrayList<>();
-    String sql = "SELECT * FROM inet_vehicleparking.tbl_payment WHERE user_id=? ORDER BY payment_id DESC";
+
+    String sql = """
+        SELECT *
+        FROM inet_vehicleparking.tbl_payment
+        WHERE user_id = ?
+        ORDER BY payment_id DESC
+    """;
 
     try (Connection conn = getConnection();
-        PreparedStatement ps = conn.prepareStatement(sql)) {
+         PreparedStatement ps = conn.prepareStatement(sql)) {
 
         ps.setInt(1, userId);
-        try (ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                list.add(mapResultSetToEntity(rs));
-            }
+        ResultSet rs = ps.executeQuery();
+
+        while (rs.next()) {
+            Payment p = new Payment();
+            p.setPaymentId(rs.getInt("payment_id"));
+            p.setBookingId(rs.getInt("booking_id"));
+            p.setDueAmount(rs.getDouble("amount_due"));
+            p.setPaidAmount(rs.getDouble("amount_paid"));
+            p.setPaymentStatus(rs.getInt("payment_status"));
+            p.setUserId(rs.getInt("user_id"));
+            list.add(p);
         }
     }
     return list;
 }
+
 
 public void createPendingPayment(int bookingId, int userId) throws SQLException {
     String sql = "INSERT INTO inet_vehicleparking.tbl_payment "
@@ -103,22 +117,21 @@ public void createPendingPayment(int bookingId, int userId) throws SQLException 
         }
     }
 
-    public boolean pay(int paymentId, double amount) throws SQLException {
-    String sql = """
-        UPDATE inet_vehicleparking.tbl_payment
-        SET amount_paid=?, payment_status=?
-        WHERE payment_id=?
-    """;
+    public void payNow(int paymentId, double amount, String paidBy) throws SQLException {
 
-    try (Connection conn = getConnection();
-        PreparedStatement ps = conn.prepareStatement(sql)) {
+        String sql = """
+            UPDATE inet_vehicleparking.tbl_payment
+            SET amount_paid = ?, payment_status = 1, paid_by = ?
+            WHERE payment_id = ?
+        """;
 
-        ps.setDouble(1, amount);
-        ps.setInt(2, Payment.STATUS_PAID);
-        ps.setInt(3, paymentId);
+        try (Connection conn = getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)) {
 
-        return ps.executeUpdate() > 0;
+            ps.setDouble(1, amount);
+            ps.setString(2, paidBy);
+            ps.setInt(3, paymentId);
+            ps.executeUpdate();
+        }
     }
-}
-
 }

@@ -22,8 +22,9 @@ public class ParkingSlot {
 
     @Override
     public String toString() {
-        return "Slot #" + parkingSlotNumber + " (" + zone + ")";
+        return "Slot " + parkingSlotNumber + " (" + getStatusText() + ")";
     }
+
 
 
     // Constructors

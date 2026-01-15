@@ -46,6 +46,7 @@ public class LoginFrame extends JFrame {
     }
 
     private void login() {
+        
         String username = txtUsername.getText().trim();
         String password = new String(txtPassword.getPassword()).trim();
 
@@ -60,24 +61,16 @@ public class LoginFrame extends JFrame {
             if (user == null) {
                 JOptionPane.showMessageDialog(this, "Invalid username or password.");
                 return;
-            }
+            }   
 
-            int groupId = user.getUserGroupId() != null ? user.getUserGroupId() : 0;
+        int groupId = user.getUserGroupId() != null ? user.getUserGroupId() : 0;
 
-            // ===== ADMIN =====
-            if (groupId == 1) {
-                SwingUtilities.invokeLater(() -> {
-                    new AdminDashboard().setVisible(true);
-                });
-            }
-            // ===== CUSTOMER =====
-            else {
-                int ownerId = userDAO.findOwnerIdByUserId(user.getUserId());
-
-                SwingUtilities.invokeLater(() -> {
-                    new CustomerDashboard(user.getUserId(), ownerId).setVisible(true);
-                });
-            }
+        if (groupId == 1) {
+            new AdminDashboard().setVisible(true);
+        } else {
+            int ownerId = userDAO.findOwnerIdByUserId(user.getUserId());
+            new CustomerDashboard(user.getUserId(), ownerId).setVisible(true);
+        }
 
             dispose(); // close login window
 
@@ -85,11 +78,5 @@ public class LoginFrame extends JFrame {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage());
         }
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            new LoginFrame().setVisible(true);
-        });
-    }
+    }       
 }

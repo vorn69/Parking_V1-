@@ -186,7 +186,7 @@ public class AdminDashboard extends JFrame {
 
     private void loadTable() {
         try {
-            List<Booking> list = bookingDAO.findAll();
+            List<Booking> list = bookingDAO.findPendingBookings();
 
             DefaultTableModel model = new DefaultTableModel(
                     new String[]{"Booking ID", "Customer ID", "Slot ID", "Status"}, 0
@@ -213,8 +213,8 @@ public class AdminDashboard extends JFrame {
                 return "PENDING";
             case Booking.STATUS_APPROVED:
                 return "APPROVED";
-            case Booking.STATUS_CHECKED_IN:
-                return "CHECKED IN";
+            case Booking.STATUS_REJECTED:
+                return "REJECTED";
             default:
                 return "UNKNOWN";
         }
