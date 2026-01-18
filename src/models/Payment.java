@@ -17,6 +17,9 @@ public class Payment {
     private Integer userId;
     private String remarks;
 
+    private String userName;
+    private String fullName;
+    
     // Status constants
     public static final int STATUS_PENDING = 0;
     public static final int STATUS_PAID = 1;

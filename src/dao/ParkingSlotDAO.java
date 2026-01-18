@@ -138,6 +138,40 @@ public List<ParkingSlot> findAll() throws SQLException {
         }
     }
 
+    public void delete(int slotId) throws SQLException {
+        String sql = "DELETE FROM inet_vehicleparking.tbl_parking_slot WHERE parking_slot_id = ?";
+
+        try (Connection conn = getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, slotId);
+            ps.executeUpdate();
+        }
+    }
+
+    public boolean update(ParkingSlot slot) throws SQLException {
+        String sql = """
+            UPDATE inet_vehicleparking.tbl_parking_slot
+            SET parking_slot_number=?, parking_slot_status=?, user_id=?
+            WHERE parking_slot_id=?
+        """;
+
+        try (Connection conn = getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, slot.getParkingSlotNumber());
+            ps.setInt(2, slot.getParkingSlotStatus());
+            if (slot.getUserId() != null) {
+                ps.setInt(3, slot.getUserId());
+            } else {
+                ps.setNull(3, Types.INTEGER);
+            }
+            ps.setInt(4, slot.getParkingSlotId());
+
+            return ps.executeUpdate() > 0;
+        }
+    }
+
     // public boolean reserveSlot(int slotId, int userId) throws SQLException {
     // String sql = """
     //     UPDATE inet_vehicleparking.tbl_parking_slot

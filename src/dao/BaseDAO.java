@@ -7,7 +7,7 @@ public abstract class BaseDAO<T> {
     
     protected Connection getConnection() throws SQLException {
         return utils.DatabaseConnection.getConnection();
-    }
+    }           
     
     protected void closeResources(Connection conn, PreparedStatement pstmt, ResultSet rs) {
         try {

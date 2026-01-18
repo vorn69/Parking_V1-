@@ -13,7 +13,7 @@ public class AdminDashboard extends JFrame {
     private CardLayout cardLayout;
     private JPanel contentPanel;
 
-    private JLabel lblBookings, lblVehicles, lblOwners, lblSlots;
+    private JLabel lblBookings, lblVehicles, lblOwners, lblSlots;   
     private JTable table;
 
     private BookingDAO bookingDAO;

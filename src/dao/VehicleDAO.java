@@ -32,15 +32,17 @@ public class VehicleDAO extends BaseDAO<Vehicle> {
         return vehicle;
     }
 
+    // Add this method to VehicleDAO.java
     /* ================= CREATE ================= */
 
+    
     public Integer create(Vehicle vehicle) throws SQLException {
         String sql = "INSERT INTO " + getTableName() +
                 " (vehicle_category_id, vehicle_plate_number, vehicle_description, vehicle_image, vehicle_owner_id) " +
                 "VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setInt(1, vehicle.getVehicleCategoryId());
             pstmt.setString(2, vehicle.getVehiclePlateNumber());
@@ -61,13 +63,33 @@ public class VehicleDAO extends BaseDAO<Vehicle> {
         }
     }
 
+    public List<Vehicle> findByUserId(int userId) throws SQLException {
+    String sql = """
+        SELECT v.* 
+        FROM inet_vehicleparking.tbl_vehicle v
+        JOIN inet_vehicleparking.tbl_vehicle_owner vo ON v.vehicle_owner_id = vo.vehicle_owner_id
+        WHERE vo.user_id = ?
+    """;
+    
+    List<Vehicle> list = new ArrayList<>();
+    try (Connection conn = getConnection();
+        PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        pstmt.setInt(1, userId);
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapResultSetToEntity(rs));
+            }
+        }
+    }
+    return list;
+}
     /* ================= READ ================= */
 
     public Vehicle findById(Integer id) throws SQLException {
         String sql = "SELECT * FROM " + getTableName() + " WHERE vehicle_id=?";
 
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setInt(1, id);
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -81,7 +103,7 @@ public class VehicleDAO extends BaseDAO<Vehicle> {
                 " WHERE vehicle_plate_number=?";
 
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, plateNumber);
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -89,6 +111,19 @@ public class VehicleDAO extends BaseDAO<Vehicle> {
             }
         }
     }
+
+    // In VehicleDAO.java - Add this method
+// In VehicleDAO.java
+public int getVehicleOwnerIdForUser(int userId) throws SQLException {
+    String sql = "SELECT vehicle_owner_id FROM inet_vehicleparking.tbl_vehicle_owner WHERE user_id = ?";
+    
+    try (Connection conn = getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, userId);
+        ResultSet rs = ps.executeQuery();
+        return rs.next() ? rs.getInt(1) : -1;
+    }
+}
 
     public Vehicle findByIdWithDetails(Integer id) throws SQLException {
         String sql = "SELECT v.*, vc.vehicle_category_name, vo.vehicle_owner_name " +
