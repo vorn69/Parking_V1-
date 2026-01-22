@@ -10,16 +10,15 @@ import models.User;
 
 public class LoginFrame extends JFrame {
 
-    private JTextField txtEmail;
+    private JTextField txtUsername;
     private JPasswordField txtPassword;
-    private JCheckBox chkRemember;
-    private JButton btnLogin;
+    private JButton btnLogin, btnSignup;
     private UserDAO userDAO;
     private JPanel mainPanel;
 
     public LoginFrame() {
-        setTitle("Login - Parking Management System");
-        setSize(450, 500);
+        setTitle("Login - Parking System");
+        setSize(400, 500);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
@@ -31,58 +30,59 @@ public class LoginFrame extends JFrame {
     private void initUI() {
         mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(Color.WHITE);
-        mainPanel.setBorder(new EmptyBorder(30, 40, 30, 40));
+        mainPanel.setBorder(new EmptyBorder(40, 40, 40, 40));
 
-        // Header Panel
-        JPanel headerPanel = createHeaderPanel();
-        mainPanel.add(headerPanel, BorderLayout.NORTH);
+        // Create the main content panel with vertical layout
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBackground(Color.WHITE);
 
-        // Form Panel
-        JPanel formPanel = createFormPanel();
-        mainPanel.add(formPanel, BorderLayout.CENTER);
+        // Header
+        contentPanel.add(createHeaderPanel());
+        contentPanel.add(Box.createVerticalStrut(40));
 
-        // Footer Panel
-        JPanel footerPanel = createFooterPanel();
-        mainPanel.add(footerPanel, BorderLayout.SOUTH);
+        // Form
+        contentPanel.add(createFormPanel());
+        contentPanel.add(Box.createVerticalStrut(20));
 
+        // OR Divider
+        contentPanel.add(createDividerPanel());
+        contentPanel.add(Box.createVerticalStrut(20));
+
+        // Sign Up Button
+        contentPanel.add(createSignupPanel());
+
+        mainPanel.add(contentPanel, BorderLayout.CENTER);
         add(mainPanel);
 
-        // Add Enter key listener for login
+        // Add Enter key listener
         txtPassword.addActionListener(e -> login());
         
-        // Add focus listeners for better UX
-        addFocusListeners();
-        
-        // Set focus to email field
-        SwingUtilities.invokeLater(() -> txtEmail.requestFocusInWindow());
+        // Set focus to username field
+        SwingUtilities.invokeLater(() -> txtUsername.requestFocusInWindow());
     }
 
     private JPanel createHeaderPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(0, 0, 30, 0));
+        panel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Title
-        JLabel title = new JLabel("Enter Your Email & Password");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        title.setForeground(new Color(33, 37, 41));
-        title.setHorizontalAlignment(SwingConstants.CENTER);
-        
-        // Subtitle
-        JLabel subtitle = new JLabel("Sign in to your account");
-        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        subtitle.setForeground(new Color(108, 117, 125));
-        subtitle.setHorizontalAlignment(SwingConstants.CENTER);
-        
-        // Icon (optional)
-        JLabel iconLabel = new JLabel("🔐");
-        iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 48));
-        iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        iconLabel.setBorder(new EmptyBorder(0, 0, 10, 0));
+        // App Name
+        JLabel appName = new JLabel("Parking Management");
+        appName.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        appName.setForeground(new Color(0, 0, 0));
+        appName.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        panel.add(iconLabel, BorderLayout.NORTH);
-        panel.add(title, BorderLayout.CENTER);
-        panel.add(subtitle, BorderLayout.SOUTH);
+        // Welcome Text
+        JLabel welcomeLabel = new JLabel("Welcome back");
+        welcomeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        welcomeLabel.setForeground(new Color(100, 100, 100));
+        welcomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        welcomeLabel.setBorder(new EmptyBorder(10, 0, 0, 0));
+
+        panel.add(appName);
+        panel.add(welcomeLabel);
 
         return panel;
     }
@@ -91,106 +91,71 @@ public class LoginFrame extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(20, 0, 20, 0));
+        panel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Email Field
-        JLabel lblEmail = new JLabel("Email Address");
-        lblEmail.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        lblEmail.setForeground(new Color(73, 80, 87));
-        lblEmail.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panel.add(lblEmail);
-        panel.add(Box.createVerticalStrut(5));
+        // Username Field
+        JLabel lblUsername = new JLabel("Username");
+        lblUsername.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblUsername.setForeground(new Color(0, 0, 0));
+        lblUsername.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(lblUsername);
+        panel.add(Box.createVerticalStrut(8));
 
-        txtEmail = new JTextField();
-        txtEmail.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
-        txtEmail.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        txtEmail.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(206, 212, 218), 1),
-            BorderFactory.createEmptyBorder(10, 15, 10, 15)
+        txtUsername = new JTextField();
+        txtUsername.setMaximumSize(new Dimension(300, 45));
+        txtUsername.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        txtUsername.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+            BorderFactory.createEmptyBorder(12, 15, 12, 15)
         ));
-        txtEmail.putClientProperty("JTextField.placeholderText", "example@gmail.com");
-        panel.add(txtEmail);
+        txtUsername.setBackground(Color.WHITE);
+        txtUsername.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(txtUsername);
         panel.add(Box.createVerticalStrut(20));
 
         // Password Field
         JLabel lblPassword = new JLabel("Password");
-        lblPassword.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        lblPassword.setForeground(new Color(73, 80, 87));
+        lblPassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblPassword.setForeground(new Color(0, 0, 0));
         lblPassword.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(lblPassword);
-        panel.add(Box.createVerticalStrut(5));
+        panel.add(Box.createVerticalStrut(8));
 
         txtPassword = new JPasswordField();
-        txtPassword.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
-        txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        txtPassword.setMaximumSize(new Dimension(300, 45));
+        txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         txtPassword.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(206, 212, 218), 1),
-            BorderFactory.createEmptyBorder(10, 15, 10, 15)
+            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+            BorderFactory.createEmptyBorder(12, 15, 12, 15)
         ));
-        txtPassword.putClientProperty("JTextField.placeholderText", "Enter your password");
+        txtPassword.setBackground(Color.WHITE);
+        txtPassword.setAlignmentX(Component.CENTER_ALIGNMENT);
         panel.add(txtPassword);
-        panel.add(Box.createVerticalStrut(20));
-
-        // Remember me and Forgot Password
-        JPanel optionsPanel = new JPanel(new BorderLayout());
-        optionsPanel.setBackground(Color.WHITE);
-        optionsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
-
-        chkRemember = new JCheckBox("Keep me logged in");
-        chkRemember.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        chkRemember.setBackground(Color.WHITE);
-        chkRemember.setFocusPainted(false);
-        chkRemember.setSelected(false);
-
-        JButton btnForgot = new JButton("Forgot Password?");
-        btnForgot.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        btnForgot.setForeground(new Color(0, 123, 255));
-        btnForgot.setBorderPainted(false);
-        btnForgot.setContentAreaFilled(false);
-        btnForgot.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btnForgot.setFocusPainted(false);
-        btnForgot.addActionListener(e -> showForgotPasswordDialog());
-
-        optionsPanel.add(chkRemember, BorderLayout.WEST);
-        optionsPanel.add(btnForgot, BorderLayout.EAST);
-        panel.add(optionsPanel);
         panel.add(Box.createVerticalStrut(30));
 
         // Login Button
-        btnLogin = new JButton("Login");
+        btnLogin = new JButton("Log in");
         btnLogin.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnLogin.setPreferredSize(new Dimension(200, 45));
-        btnLogin.setMaximumSize(new Dimension(400, 45));
-        btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnLogin.setPreferredSize(new Dimension(300, 45));
+        btnLogin.setMaximumSize(new Dimension(300, 45));
+        btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 16));
         btnLogin.setForeground(Color.WHITE);
-        btnLogin.setBackground(new Color(0, 123, 255));
-        btnLogin.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        btnLogin.setBackground(new Color(0, 100, 200));
+        btnLogin.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
         btnLogin.setFocusPainted(false);
         btnLogin.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnLogin.setBorderPainted(false);
         
-        // Hover effect
+        // Simple hover effect
         btnLogin.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                btnLogin.setBackground(new Color(0, 105, 217));
+                btnLogin.setBackground(new Color(0, 90, 180));
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                btnLogin.setBackground(new Color(0, 123, 255));
-            }
-        });
-        
-        // Pressed effect
-        btnLogin.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                btnLogin.setBackground(new Color(0, 98, 204));
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                btnLogin.setBackground(new Color(0, 123, 255));
+                btnLogin.setBackground(new Color(0, 100, 200));
             }
         });
 
@@ -200,136 +165,84 @@ public class LoginFrame extends JFrame {
         return panel;
     }
 
-    private JPanel createFooterPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+    private JPanel createDividerPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         panel.setBackground(Color.WHITE);
-        panel.setBorder(new EmptyBorder(20, 0, 0, 0));
-
-        // Divider
-        JSeparator separator = new JSeparator();
-        separator.setForeground(new Color(233, 236, 239));
-        panel.add(separator, BorderLayout.NORTH);
-
-        // Footer text
-        JLabel footerLabel = new JLabel("© 2024 Parking Management System");
-        footerLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        footerLabel.setForeground(new Color(108, 117, 125));
-        footerLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        footerLabel.setBorder(new EmptyBorder(15, 0, 0, 0));
-        panel.add(footerLabel, BorderLayout.CENTER);
-
+        panel.setMaximumSize(new Dimension(300, 20));
+        
+        // Left line
+        JSeparator leftLine = new JSeparator();
+        leftLine.setPreferredSize(new Dimension(100, 1));
+        leftLine.setForeground(new Color(200, 200, 200));
+        
+        // "or" text
+        JLabel orLabel = new JLabel("or");
+        orLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        orLabel.setForeground(new Color(100, 100, 100));
+        
+        // Right line
+        JSeparator rightLine = new JSeparator();
+        rightLine.setPreferredSize(new Dimension(100, 1));
+        rightLine.setForeground(new Color(200, 200, 200));
+        
+        panel.add(leftLine);
+        panel.add(orLabel);
+        panel.add(rightLine);
+        
         return panel;
     }
 
-    private void addFocusListeners() {
-        // Email field focus
-        txtEmail.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                txtEmail.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(0, 123, 255), 2),
-                    BorderFactory.createEmptyBorder(9, 14, 9, 14)
-                ));
-            }
-
-            @Override
-            public void focusLost(FocusEvent e) {
-                txtEmail.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(206, 212, 218), 1),
-                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
-                ));
-            }
-        });
-
-        // Password field focus
-        txtPassword.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                txtPassword.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(0, 123, 255), 2),
-                    BorderFactory.createEmptyBorder(9, 14, 9, 14)
-                ));
-            }
-
-            @Override
-            public void focusLost(FocusEvent e) {
-                txtPassword.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(206, 212, 218), 1),
-                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
-                ));
-            }
-        });
-    }
-
-    private void showForgotPasswordDialog() {
-        JDialog dialog = new JDialog(this, "Forgot Password", true);
-        dialog.setSize(350, 200);
-        dialog.setLocationRelativeTo(this);
-        dialog.setLayout(new BorderLayout());
-        
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+    private JPanel createSignupPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
         panel.setBackground(Color.WHITE);
         
-        JLabel message = new JLabel("<html><div style='text-align: center;'>"
-                + "Enter your email address and we'll send you a password reset link."
-                + "</div></html>");
-        message.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        message.setHorizontalAlignment(SwingConstants.CENTER);
-        
-        JTextField emailField = new JTextField();
-        emailField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(206, 212, 218), 1),
-            BorderFactory.createEmptyBorder(8, 10, 8, 10)
+        // Sign Up Button
+        btnSignup = new JButton("Sign up");
+        btnSignup.setPreferredSize(new Dimension(300, 45));
+        btnSignup.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btnSignup.setForeground(new Color(0, 100, 200));
+        btnSignup.setBackground(Color.WHITE);
+        btnSignup.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+            BorderFactory.createEmptyBorder(10, 20, 10, 20)
         ));
+        btnSignup.setFocusPainted(false);
+        btnSignup.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         
-        JButton sendButton = new JButton("Send Reset Link");
-        sendButton.setBackground(new Color(0, 123, 255));
-        sendButton.setForeground(Color.WHITE);
-        sendButton.setFocusPainted(false);
-        sendButton.addActionListener(e -> {
-            // TODO: Implement password reset functionality
-            JOptionPane.showMessageDialog(dialog, 
-                "Password reset link would be sent to: " + emailField.getText(),
-                "Reset Link Sent", 
-                JOptionPane.INFORMATION_MESSAGE);
-            dialog.dispose();
+        // Simple hover effect
+        btnSignup.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btnSignup.setBackground(new Color(240, 240, 240));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btnSignup.setBackground(Color.WHITE);
+            }
         });
         
-        JButton cancelButton = new JButton("Cancel");
-        cancelButton.addActionListener(e -> dialog.dispose());
+        btnSignup.addActionListener(e -> openSignup());
+        panel.add(btnSignup);
         
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(Color.WHITE);
-        buttonPanel.add(cancelButton);
-        buttonPanel.add(sendButton);
-        
-        panel.add(message, BorderLayout.NORTH);
-        panel.add(emailField, BorderLayout.CENTER);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-        
-        dialog.add(panel);
-        dialog.setVisible(true);
+        return panel;
     }
 
     private void login() {
-        String email = txtEmail.getText().trim();
+        String username = txtUsername.getText().trim();
         String password = new String(txtPassword.getPassword()).trim();
 
         // Validation
-        if (email.isEmpty()) {
-            highlightField(txtEmail, "Please enter your email address");
+        if (username.isEmpty()) {
+            showError("Please enter username");
+            txtUsername.requestFocus();
             return;
         }
 
         if (password.isEmpty()) {
-            highlightField(txtPassword, "Please enter your password");
-            return;
-        }
-
-        // Basic email validation
-        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            highlightField(txtEmail, "Please enter a valid email address");
+            showError("Please enter password");
+            txtPassword.requestFocus();
             return;
         }
 
@@ -345,10 +258,6 @@ public class LoginFrame extends JFrame {
             @Override
             protected User doInBackground() throws Exception {
                 try {
-                    // Convert email to lowercase for consistency
-                    String username = email.toLowerCase();
-                    
-                    // Try to authenticate user
                     return userDAO.login(username, password);
                 } catch (SQLException ex) {
                     errorMessage = ex.getMessage();
@@ -358,7 +267,7 @@ public class LoginFrame extends JFrame {
 
             @Override
             protected void done() {
-                btnLogin.setText("Login");
+                btnLogin.setText("Log in");
                 btnLogin.setEnabled(true);
                 setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
@@ -367,18 +276,27 @@ public class LoginFrame extends JFrame {
 
                     if (user == null) {
                         if (errorMessage != null) {
-                            showError("Login Error", "Database error: " + errorMessage);
+                            JOptionPane.showMessageDialog(LoginFrame.this, 
+                                "Database error: " + errorMessage, 
+                                "Login Error", 
+                                JOptionPane.ERROR_MESSAGE);
                         } else {
-                            showError("Login Failed", "Invalid email or password.");
+                            JOptionPane.showMessageDialog(LoginFrame.this, 
+                                "Invalid username or password.", 
+                                "Login Failed", 
+                                JOptionPane.WARNING_MESSAGE);
                         }
                         return;
                     }
 
-                    // Login successful - open appropriate dashboard
+                    // Login successful
                     openDashboard(user);
 
                 } catch (Exception ex) {
-                    showError("Unexpected Error", "An unexpected error occurred: " + ex.getMessage());
+                    JOptionPane.showMessageDialog(LoginFrame.this, 
+                        "An error occurred: " + ex.getMessage(), 
+                        "Error", 
+                        JOptionPane.ERROR_MESSAGE);
                 }
             }
         };
@@ -386,71 +304,52 @@ public class LoginFrame extends JFrame {
         worker.execute();
     }
 
-    private void highlightField(JComponent field, String message) {
-        // Shake animation
-        Timer timer = new Timer(20, null);
-        final int[] x = {0};
-        final int originalX = field.getX();
-        
-        timer.addActionListener(new ActionListener() {
-            private int count = 0;
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (count < 10) {
-                    int offset = (count % 2 == 0) ? 5 : -5;
-                    field.setLocation(originalX + offset, field.getY());
-                    count++;
-                } else {
-                    field.setLocation(originalX, field.getY());
-                    timer.stop();
-                }
-            }
-        });
-        timer.start();
-
-        // Show error message
-        JOptionPane.showMessageDialog(this, message, "Validation Error", 
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(this, 
+            message, 
+            "Error", 
             JOptionPane.WARNING_MESSAGE);
-        
-        // Set error border
-        field.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(220, 53, 69), 2),
-            BorderFactory.createEmptyBorder(9, 14, 9, 14)
-        ));
-        
-        field.requestFocus();
     }
 
     private void openDashboard(User user) {
         try {
             int groupId = user.getUserGroupId() != null ? user.getUserGroupId() : 0;
 
-            if (groupId == 1) {
-                // Admin dashboard
-                SwingUtilities.invokeLater(() -> {
+            SwingUtilities.invokeLater(() -> {
+                if (groupId == 1) {
                     new AdminDashboard().setVisible(true);
-                    dispose();
-                });
-            } else {
-                // Customer dashboard
-                int ownerId = userDAO.findOwnerIdByUserId(user.getUserId());
-                SwingUtilities.invokeLater(() -> {
-                    new CustomerDashboard(user.getUserId(), ownerId).setVisible(true);
-                    dispose();
-                });
-            }
-        } catch (SQLException ex) {
-            showError("Dashboard Error", "Failed to load dashboard: " + ex.getMessage());
+                } else {
+                    try {
+                        int ownerId = userDAO.findOwnerIdByUserId(user.getUserId());
+                        new CustomerDashboard(user.getUserId(), ownerId).setVisible(true);
+                    } catch (SQLException ex) {
+                        JOptionPane.showMessageDialog(LoginFrame.this,
+                            "Error loading dashboard: " + ex.getMessage(),
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
+                dispose(); // Close login window
+            });
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, 
+                "Failed to load dashboard: " + ex.getMessage(), 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void showError(String title, String message) {
-        JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
+    private void openSignup() {
+        // TODO: Implement signup functionality
+        JOptionPane.showMessageDialog(this,
+            "Sign up functionality will be implemented here.",
+            "Sign Up",
+            JOptionPane.INFORMATION_MESSAGE);
     }
 
     public static void main(String[] args) {
-        // Set Look and Feel
+        // Set system look and feel
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {

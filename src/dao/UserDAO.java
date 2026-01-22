@@ -150,7 +150,7 @@ public class UserDAO extends BaseDAO<User> {
     public int findOwnerIdByUserId(int userId) throws SQLException {
     String sql = "SELECT vehicle_owner_id FROM inet_vehicleparking.tbl_vehicle_owner WHERE user_id=?";
     try (Connection conn = getConnection();
-         PreparedStatement ps = conn.prepareStatement(sql)) {
+        PreparedStatement ps = conn.prepareStatement(sql)) {
 
         ps.setInt(1, userId);
         try (ResultSet rs = ps.executeQuery()) {

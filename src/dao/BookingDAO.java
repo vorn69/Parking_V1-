@@ -91,7 +91,7 @@ public class BookingDAO extends BaseDAO<Booking> {
         String sql = "SELECT * FROM " + getTableName() + " WHERE booking_status = ? ORDER BY booking_time DESC";
         
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, status);
             ResultSet rs = ps.executeQuery();
             
@@ -134,7 +134,7 @@ public class BookingDAO extends BaseDAO<Booking> {
             String sqlBooking = """
                 INSERT INTO inet_vehicleparking.tbl_booking
                 (customer_id, vehicle_id, slot_id, booking_status,
-                 duration_of_booking, remarks, booking_time, user_id, booking_ref)
+                duration_of_booking, remarks, booking_time, user_id, booking_ref)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
@@ -306,7 +306,7 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
     public boolean updateBookingStatus(int bookingId, int status) throws SQLException {
         String sql = "UPDATE " + getTableName() + " SET booking_status = ? WHERE booking_id = ?";
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, status);
             ps.setInt(2, bookingId);
             return ps.executeUpdate() > 0;
@@ -316,7 +316,7 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
     public boolean updateArrivalTime(int bookingId, Timestamp arrivalTime) throws SQLException {
         String sql = "UPDATE " + getTableName() + " SET actual_arrival = ? WHERE booking_id = ?";
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setTimestamp(1, arrivalTime);
             ps.setInt(2, bookingId);
             return ps.executeUpdate() > 0;
@@ -327,7 +327,7 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
             throws SQLException {
         String sql = "UPDATE " + getTableName() + " SET departure_time = ?, total_hours = ?, total_amount = ? WHERE booking_id = ?";
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setTimestamp(1, departureTime);
             ps.setDouble(2, totalHours);
             ps.setDouble(3, totalAmount);
@@ -379,8 +379,8 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
     public int countBookings() throws SQLException {
         String sql = "SELECT COUNT(*) FROM " + getTableName();
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery()) {
             return rs.next() ? rs.getInt(1) : 0;
         }
     }
@@ -388,7 +388,7 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
     public int countBookingsByStatus(int status) throws SQLException {
         String sql = "SELECT COUNT(*) FROM " + getTableName() + " WHERE booking_status = ?";
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, status);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getInt(1) : 0;
@@ -399,7 +399,7 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
     public int countBookingsByUser(int userId) throws SQLException {
         String sql = "SELECT COUNT(*) FROM " + getTableName() + " WHERE user_id = ?";
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getInt(1) : 0;
