@@ -30,7 +30,7 @@ public class BookingDAO extends BaseDAO<Booking> {
         b.setDurationOfBooking(rs.getString("duration_of_booking"));
         b.setRemarks(rs.getString("remarks"));
         b.setBookingTime(rs.getTimestamp("booking_time"));
-        
+
         // Added missing fields to match Booking model
         b.setExpectedArrival(rs.getTimestamp("expected_arrival"));
         b.setActualArrival(rs.getTimestamp("actual_arrival"));
@@ -38,16 +38,16 @@ public class BookingDAO extends BaseDAO<Booking> {
         b.setTotalHours((Double) rs.getObject("total_hours"));
         b.setTotalAmount((Double) rs.getObject("total_amount"));
         b.setBookingRef(rs.getString("booking_ref"));
-        
+
         return b;
     }
 
     // ================= FIND METHODS =================
-    
-        public Booking findById(int bookingId) throws SQLException {
+
+    public Booking findById(int bookingId) throws SQLException {
         String sql = "SELECT * FROM " + getTableName() + " WHERE " + getIdColumnName() + " = ?";
         try (Connection conn = getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, bookingId);
             ResultSet rs = ps.executeQuery();
             return rs.next() ? mapResultSetToEntity(rs) : null;
@@ -57,12 +57,12 @@ public class BookingDAO extends BaseDAO<Booking> {
     public List<Booking> findByUserId(int userId) throws SQLException {
         List<Booking> list = new ArrayList<>();
         String sql = "SELECT * FROM " + getTableName() + " WHERE user_id = ? ORDER BY booking_time DESC";
-        
+
         try (Connection conn = getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             ResultSet rs = ps.executeQuery();
-            
+
             while (rs.next()) {
                 list.add(mapResultSetToEntity(rs));
             }
@@ -73,12 +73,12 @@ public class BookingDAO extends BaseDAO<Booking> {
     public List<Booking> findByCustomerId(int customerId) throws SQLException {
         List<Booking> list = new ArrayList<>();
         String sql = "SELECT * FROM " + getTableName() + " WHERE customer_id = ? ORDER BY booking_time DESC";
-        
+
         try (Connection conn = getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, customerId);
             ResultSet rs = ps.executeQuery();
-            
+
             while (rs.next()) {
                 list.add(mapResultSetToEntity(rs));
             }
@@ -89,26 +89,27 @@ public class BookingDAO extends BaseDAO<Booking> {
     public List<Booking> findByStatus(int status) throws SQLException {
         List<Booking> list = new ArrayList<>();
         String sql = "SELECT * FROM " + getTableName() + " WHERE booking_status = ? ORDER BY booking_time DESC";
-        
+
         try (Connection conn = getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, status);
             ResultSet rs = ps.executeQuery();
-            
+
             while (rs.next()) {
                 list.add(mapResultSetToEntity(rs));
             }
         }
         return list;
     }
+
     public List<Booking> findAll() throws SQLException {
         List<Booking> list = new ArrayList<>();
         String sql = "SELECT * FROM " + getTableName() + " ORDER BY booking_time DESC";
-        
+
         try (Connection conn = getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ResultSet rs = ps.executeQuery();
-            
+
             while (rs.next()) {
                 list.add(mapResultSetToEntity(rs));
             }
@@ -123,182 +124,352 @@ public class BookingDAO extends BaseDAO<Booking> {
 
     // ================= CREATE BOOKING =================
     public int createBookingWithSlotUpdate(Booking booking) throws SQLException {
-        Connection conn = getConnection();
+        Connection conn = null;
+        PreparedStatement psBooking = null;
+        PreparedStatement psSlot = null;
+        ResultSet rs = null;
+
         try {
+            conn = getConnection();
             conn.setAutoCommit(false);
 
             // 1️⃣ Generate booking reference
             String bookingRef = generateBookingRef();
-            
+
             // 2️⃣ Insert booking (PENDING)
             String sqlBooking = """
-                INSERT INTO inet_vehicleparking.tbl_booking
-                (customer_id, vehicle_id, slot_id, booking_status,
-                duration_of_booking, remarks, booking_time, user_id, booking_ref)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """;
+                        INSERT INTO inet_vehicleparking.tbl_booking
+                        (customer_id, vehicle_id, slot_id, booking_status,
+                        duration_of_booking, remarks, booking_time, user_id, booking_ref)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """;
 
-            int bookingId;
-            try (PreparedStatement ps = conn.prepareStatement(sqlBooking, Statement.RETURN_GENERATED_KEYS)) {
-                ps.setInt(1, booking.getCustomerId());
-                ps.setInt(2, booking.getVehicleId());
-                ps.setInt(3, booking.getSlotId());
-                ps.setInt(4, Booking.STATUS_PENDING);
-                ps.setString(5, booking.getDurationOfBooking());
-                ps.setString(6, booking.getRemarks());
-                ps.setTimestamp(7, new Timestamp(System.currentTimeMillis()));
-                ps.setInt(8, booking.getUserId());
-                ps.setString(9, bookingRef);
+            int bookingId = 0;
+            psBooking = conn.prepareStatement(sqlBooking, Statement.RETURN_GENERATED_KEYS);
+            psBooking.setInt(1, booking.getCustomerId());
+            psBooking.setInt(2, booking.getVehicleId());
+            psBooking.setInt(3, booking.getSlotId());
+            psBooking.setInt(4, Booking.STATUS_PENDING);
+            psBooking.setString(5, booking.getDurationOfBooking());
+            psBooking.setString(6, booking.getRemarks());
+            psBooking.setTimestamp(7, new Timestamp(System.currentTimeMillis()));
+            psBooking.setInt(8, booking.getUserId());
+            psBooking.setString(9, bookingRef);
 
-                ps.executeUpdate();
+            psBooking.executeUpdate();
 
-                try (ResultSet rs = ps.getGeneratedKeys()) {
-                    bookingId = rs.next() ? rs.getInt(1) : 0;
-                }
+            rs = psBooking.getGeneratedKeys();
+            if (rs.next()) {
+                bookingId = rs.getInt(1);
             }
 
             // 3️⃣ Reserve slot
             String sqlSlot = """
-                UPDATE inet_vehicleparking.tbl_parking_slot
-                SET parking_slot_status = ?, user_id = ?
-                WHERE parking_slot_id = ?
-            """;
-            try (PreparedStatement ps = conn.prepareStatement(sqlSlot)) {
-                ps.setInt(1, ParkingSlot.STATUS_RESERVED);
-                ps.setInt(2, booking.getUserId());
-                ps.setInt(3, booking.getSlotId());
-                ps.executeUpdate();
-            }
+                        UPDATE inet_vehicleparking.tbl_parking_slot
+                        SET parking_slot_status = ?, user_id = ?
+                        WHERE parking_slot_id = ?
+                    """;
+            psSlot = conn.prepareStatement(sqlSlot);
+            psSlot.setInt(1, ParkingSlot.STATUS_RESERVED);
+            psSlot.setInt(2, booking.getUserId());
+            psSlot.setInt(3, booking.getSlotId());
+            psSlot.executeUpdate();
 
             conn.commit();
             return bookingId;
 
         } catch (SQLException e) {
-            if (conn != null) conn.rollback();
+            if (conn != null) {
+                conn.rollback();
+            }
             throw e;
         } finally {
-            if (conn != null) conn.close();
+            // Close resources but NOT the connection
+            if (rs != null)
+                rs.close();
+            if (psBooking != null)
+                psBooking.close();
+            if (psSlot != null)
+                psSlot.close();
+
+            // Reset auto-commit but DO NOT close connection
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public void checkTableStructure() throws SQLException {
+        String sql = """
+                    SELECT column_name, data_type, is_nullable
+                    FROM information_schema.columns
+                    WHERE table_name = 'tbl_booking'
+                    AND table_schema = 'inet_vehicleparking'
+                    ORDER BY ordinal_position
+                """;
+
+        try (Connection conn = getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+
+            System.out.println("=== tbl_booking COLUMNS ===");
+            while (rs.next()) {
+                System.out.printf("%-20s %-15s %s%n",
+                        rs.getString("column_name"),
+                        rs.getString("data_type"),
+                        rs.getString("is_nullable"));
+            }
+            System.out.println("==========================");
         }
     }
 
     // ================= APPROVE BOOKING =================
-  // In BookingDAO.java - Update approveBooking method
-// ADMIN APPROVE (CREATE PAYMENT)
-// ADMIN APPROVE (CREATE PAYMENT) - FIXED
-// ADMIN APPROVE (CREATE PAYMENT) - FIXED VERSION
-// In BookingDAO.java - Add this method
+    public boolean approveBookingNow(int bookingId, int adminUserId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement psBooking = null;
+        PreparedStatement psSlot = null;
+        ResultSet rs = null;
 
-public void approveBookingNow(int bookingId, int adminUserId) throws SQLException {
-    try (Connection conn = getConnection()) {
-        // Default to user 12 (which exists in your database)
-        int validUserId = 12;
-        
-        // Get booking details
-        String getSql = "SELECT slot_id, user_id FROM " + getTableName() + " WHERE booking_id = ?";
-        int slotId = 0;
-        int currentUserId = 0;
-        
-        try (PreparedStatement ps = conn.prepareStatement(getSql)) {
-            ps.setInt(1, bookingId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    slotId = rs.getInt("slot_id");
-                    currentUserId = rs.getInt("user_id");
-                } else {
-                    throw new SQLException("Booking " + bookingId + " not found");
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false);
+
+            System.out.println("🚀 DEBUG: Starting approval for booking #" + bookingId);
+
+            // 1. GET BOOKING DETAILS
+            String getSql = "SELECT slot_id, booking_status, user_id, duration_of_booking FROM " +
+                    getTableName() + " WHERE booking_id = ?";
+            psBooking = conn.prepareStatement(getSql);
+            psBooking.setInt(1, bookingId);
+            rs = psBooking.executeQuery();
+
+            if (!rs.next()) {
+                throw new SQLException("❌ Booking #" + bookingId + " not found!");
+            }
+
+            int slotId = rs.getInt("slot_id");
+            int currentStatus = rs.getInt("booking_status");
+            int userId = rs.getInt("user_id");
+            String duration = rs.getString("duration_of_booking");
+
+            System.out.println("📋 DEBUG: Booking details - Slot: " + slotId +
+                    ", Status: " + currentStatus);
+
+            // 2. VALIDATE BOOKING STATUS
+            if (currentStatus == Booking.STATUS_APPROVED) {
+                throw new SQLException("⚠️ Booking #" + bookingId + " is already APPROVED!");
+            }
+
+            if (currentStatus != Booking.STATUS_PENDING) {
+                throw new SQLException("❌ Booking #" + bookingId + " is not PENDING. Current status: " +
+                        (currentStatus == 0 ? "PENDING" : currentStatus == 1 ? "APPROVED" : "REJECTED"));
+            }
+
+            // 3. CHECK SLOT STATUS
+            String checkSlotSql = "SELECT parking_slot_status FROM inet_vehicleparking.tbl_parking_slot " +
+                    "WHERE parking_slot_id = ?";
+            try (PreparedStatement psCheckSlot = conn.prepareStatement(checkSlotSql)) {
+                psCheckSlot.setInt(1, slotId);
+                try (ResultSet rsSlot = psCheckSlot.executeQuery()) {
+                    if (!rsSlot.next()) {
+                        throw new SQLException("❌ Slot #" + slotId + " not found!");
+                    }
+
+                    int slotStatus = rsSlot.getInt("parking_slot_status");
+                    System.out.println("🅿️ DEBUG: Slot #" + slotId + " current status: " + slotStatus);
+
+                    // Check if slot is already occupied
+                    if (slotStatus == ParkingSlot.STATUS_OCCUPIED) {
+                        throw new SQLException("❌ Slot #" + slotId + " is already OCCUPIED!");
+                    }
+                }
+            }
+
+            // 4. UPDATE BOOKING STATUS - SIMPLIFIED (no approval timestamp)
+            System.out.println("📝 DEBUG: Updating booking status to APPROVED...");
+            String updateBookingSql = "UPDATE " + getTableName() +
+                    " SET booking_status = ? " +
+                    "WHERE booking_id = ?";
+
+            psBooking = conn.prepareStatement(updateBookingSql);
+            psBooking.setInt(1, Booking.STATUS_APPROVED);
+            psBooking.setInt(2, bookingId);
+
+            int bookingRows = psBooking.executeUpdate();
+            System.out.println("✅ DEBUG: Booking rows updated: " + bookingRows);
+
+            if (bookingRows == 0) {
+                throw new SQLException("❌ Failed to update booking status!");
+            }
+
+            // 5. UPDATE SLOT STATUS
+            System.out.println("🔄 DEBUG: Updating slot #" + slotId + " to OCCUPIED...");
+
+            // Use simple update to avoid transaction issues with Postgres
+            String updateSlotSql = "UPDATE inet_vehicleparking.tbl_parking_slot " +
+                    "SET parking_slot_status = ? " +
+                    "WHERE parking_slot_id = ?";
+
+            psSlot = conn.prepareStatement(updateSlotSql);
+            psSlot.setInt(1, ParkingSlot.STATUS_OCCUPIED);
+            psSlot.setInt(2, slotId);
+            int slotRows = psSlot.executeUpdate();
+            System.out.println("✅ DEBUG: Slot rows updated: " + slotRows);
+
+            if (slotRows == 0) {
+                throw new SQLException("❌ Failed to update slot status!");
+            }
+
+            // 6. CREATE PAYMENT RECORD
+            System.out.println("💰 DEBUG: Creating payment record...");
+            double amount = calculateAmountFromDuration(duration);
+
+            // Status 1 = APPROVED_UNPAID (Booking Approved, Payment Required)
+            String paymentSql = """
+                        INSERT INTO inet_vehicleparking.tbl_payment
+                        (booking_id, user_id, amount_due, amount_paid, payment_status, remarks, payment_date)
+                        VALUES (?, ?, ?, 0.0, 1, 'Payment pending for approved booking', NULL)
+                    """;
+
+            try (PreparedStatement psPayment = conn.prepareStatement(paymentSql)) {
+                psPayment.setInt(1, bookingId);
+                psPayment.setInt(2, userId);
+                psPayment.setDouble(3, amount);
+                psPayment.executeUpdate();
+                System.out.println("✅ DEBUG: Payment record created for $" + amount);
+            }
+
+            // 6. COMMIT TRANSACTION
+            conn.commit();
+            System.out.println("🎉 DEBUG: Transaction SUCCESSFUL! Booking #" + bookingId + " approved.");
+            return true;
+
+        } catch (SQLException e) {
+            System.err.println("💥 DEBUG: Transaction FAILED!");
+            System.err.println("Error: " + e.getMessage());
+
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                    System.out.println("🔄 DEBUG: Transaction rolled back");
+                } catch (SQLException rollbackEx) {
+                    System.err.println("⚠️ DEBUG: Rollback failed: " + rollbackEx.getMessage());
+                }
+            }
+            throw e;
+
+        } finally {
+            // Clean up resources
+            if (rs != null)
+                try {
+                    rs.close();
+                } catch (SQLException e) {
+                    /* ignore */ }
+            if (psBooking != null)
+                try {
+                    psBooking.close();
+                } catch (SQLException e) {
+                    /* ignore */ }
+            if (psSlot != null)
+                try {
+                    psSlot.close();
+                } catch (SQLException e) {
+                    /* ignore */ }
+
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                } catch (SQLException e) {
+                    System.err.println("⚠️ DEBUG: Failed to reset auto-commit: " + e.getMessage());
                 }
             }
         }
-        
-        // Fix user_id if invalid
-        if (currentUserId != 12 && currentUserId != 13 && currentUserId != 15 && currentUserId != 16) {
-            String fixSql = "UPDATE " + getTableName() + " SET user_id = ? WHERE booking_id = ?";
-            try (PreparedStatement ps = conn.prepareStatement(fixSql)) {
-                ps.setInt(1, validUserId);
-                ps.setInt(2, bookingId);
-                ps.executeUpdate();
-            }
-        } else {
-            validUserId = currentUserId;
-        }
-        
-        // Approve booking
-        String approveSql = "UPDATE " + getTableName() + " SET booking_status = ?, approved_by = ? WHERE booking_id = ?";
-        try (PreparedStatement ps = conn.prepareStatement(approveSql)) {
-            ps.setInt(1, Booking.STATUS_APPROVED);
-            ps.setInt(2, adminUserId);
-            ps.setInt(3, bookingId);
-            ps.executeUpdate();
-        }
-        
-        // Create payment
-        String paymentSql = """
-            INSERT INTO inet_vehicleparking.tbl_payment 
-            (booking_id, amount_due, payment_status, user_id) 
-            VALUES (?, 5.00, 0, ?)
-        """;
-        try (PreparedStatement ps = conn.prepareStatement(paymentSql)) {
-            ps.setInt(1, bookingId);
-            ps.setInt(2, validUserId);
-            ps.executeUpdate();
-        }
-        
-        // Update slot
-        String slotSql = """
-            UPDATE inet_vehicleparking.tbl_parking_slot 
-            SET parking_slot_status = ? 
-            WHERE parking_slot_id = ?
-        """;
-        try (PreparedStatement ps = conn.prepareStatement(slotSql)) {
-            ps.setInt(1, ParkingSlot.STATUS_OCCUPIED);
-            ps.setInt(2, slotId);
-            ps.executeUpdate();
-        }
-        
-        System.out.println("Booking " + bookingId + " approved successfully for user " + validUserId + "!");
     }
-}
+
+    // Helper methods to add to your class
+    private String getStatusText(int status) {
+        return switch (status) {
+            case Booking.STATUS_PENDING -> "PENDING";
+            case Booking.STATUS_APPROVED -> "APPROVED";
+            case Booking.STATUS_REJECTED -> "REJECTED";
+            default -> "UNKNOWN (" + status + ")";
+        };
+    }
+
+    private String getSlotStatusText(int status) {
+        return switch (status) {
+            case ParkingSlot.STATUS_AVAILABLE -> "AVAILABLE";
+            case ParkingSlot.STATUS_RESERVED -> "RESERVED";
+            case ParkingSlot.STATUS_OCCUPIED -> "OCCUPIED";
+            default -> "UNKNOWN (" + status + ")";
+        };
+    }
 
     // ================= REJECT BOOKING =================
     public boolean rejectBooking(int bookingId) throws SQLException {
-        Connection conn = getConnection();
+        Connection conn = null;
+        PreparedStatement psBooking = null;
+        PreparedStatement psSlot = null;
+        ResultSet rs = null;
+
         try {
+            conn = getConnection();
             conn.setAutoCommit(false);
-            
+
             // 1️⃣ Get booking to find slotId
-            Booking booking = findById(bookingId);
-            if (booking == null) {
+            String getSql = "SELECT slot_id FROM " + getTableName() + " WHERE booking_id = ?";
+            psBooking = conn.prepareStatement(getSql);
+            psBooking.setInt(1, bookingId);
+            rs = psBooking.executeQuery();
+
+            if (!rs.next()) {
                 throw new SQLException("Booking not found: " + bookingId);
             }
-            
-            int slotId = booking.getSlotId();
+
+            int slotId = rs.getInt("slot_id");
 
             // 2️⃣ Reject booking
-            try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE inet_vehicleparking.tbl_booking SET booking_status=? WHERE booking_id=?"
-            )) {
-                ps.setInt(1, Booking.STATUS_REJECTED);
-                ps.setInt(2, bookingId);
-                ps.executeUpdate();
-            }
+            String rejectSql = "UPDATE inet_vehicleparking.tbl_booking SET booking_status=? WHERE booking_id=?";
+            psBooking = conn.prepareStatement(rejectSql);
+            psBooking.setInt(1, Booking.STATUS_REJECTED);
+            psBooking.setInt(2, bookingId);
+            psBooking.executeUpdate();
 
             // 3️⃣ Free slot and clear user_id
-            try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE inet_vehicleparking.tbl_parking_slot SET parking_slot_status=?, user_id=NULL WHERE parking_slot_id=?"
-            )) {
-                ps.setInt(1, ParkingSlot.STATUS_AVAILABLE);
-                ps.setInt(2, slotId);
-                ps.executeUpdate();
-            }
+            String slotSql = "UPDATE inet_vehicleparking.tbl_parking_slot SET parking_slot_status=?, user_id=NULL WHERE parking_slot_id=?";
+            psSlot = conn.prepareStatement(slotSql);
+            psSlot.setInt(1, ParkingSlot.STATUS_AVAILABLE);
+            psSlot.setInt(2, slotId);
+            psSlot.executeUpdate();
 
             conn.commit();
             return true;
 
         } catch (SQLException e) {
-            if (conn != null) conn.rollback();
+            if (conn != null)
+                conn.rollback();
             throw e;
         } finally {
-            if (conn != null) conn.close();
+            // Close resources but NOT the connection
+            if (rs != null)
+                rs.close();
+            if (psBooking != null)
+                psBooking.close();
+            if (psSlot != null)
+                psSlot.close();
+
+            // Reset auto-commit but DO NOT close connection
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -306,7 +477,7 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
     public boolean updateBookingStatus(int bookingId, int status) throws SQLException {
         String sql = "UPDATE " + getTableName() + " SET booking_status = ? WHERE booking_id = ?";
         try (Connection conn = getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, status);
             ps.setInt(2, bookingId);
             return ps.executeUpdate() > 0;
@@ -316,18 +487,19 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
     public boolean updateArrivalTime(int bookingId, Timestamp arrivalTime) throws SQLException {
         String sql = "UPDATE " + getTableName() + " SET actual_arrival = ? WHERE booking_id = ?";
         try (Connection conn = getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setTimestamp(1, arrivalTime);
             ps.setInt(2, bookingId);
             return ps.executeUpdate() > 0;
         }
     }
 
-    public boolean updateDepartureTime(int bookingId, Timestamp departureTime, double totalHours, double totalAmount) 
+    public boolean updateDepartureTime(int bookingId, Timestamp departureTime, double totalHours, double totalAmount)
             throws SQLException {
-        String sql = "UPDATE " + getTableName() + " SET departure_time = ?, total_hours = ?, total_amount = ? WHERE booking_id = ?";
+        String sql = "UPDATE " + getTableName()
+                + " SET departure_time = ?, total_hours = ?, total_amount = ? WHERE booking_id = ?";
         try (Connection conn = getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setTimestamp(1, departureTime);
             ps.setDouble(2, totalHours);
             ps.setDouble(3, totalAmount);
@@ -336,24 +508,62 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
         }
     }
 
+    /* ================= UPDATE ================= */
+    public boolean update(Booking booking) throws SQLException {
+        String sql = "UPDATE " + getTableName() +
+                " SET customer_id = ?, vehicle_id = ?, slot_id = ?, " +
+                "duration_of_booking = ?, booking_status = ?, " +
+                "booking_time = ?, actual_end_time = ?, " +
+                "user_id = ?, remarks = ? " +
+                "WHERE booking_id = ?";
+
+        try (Connection conn = getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, booking.getCustomerId());
+            pstmt.setInt(2, booking.getVehicleId());
+            pstmt.setInt(3, booking.getSlotId());
+            pstmt.setString(4, booking.getDurationOfBooking());
+            pstmt.setInt(5, booking.getBookingStatus());
+
+            if (booking.getBookingTime() != null) {
+                pstmt.setTimestamp(6, booking.getBookingTime());
+            } else {
+                pstmt.setNull(6, Types.TIMESTAMP);
+            }
+
+            if (booking.getActualEndTime() != null) {
+                pstmt.setTimestamp(7, booking.getActualEndTime());
+            } else {
+                pstmt.setNull(7, Types.TIMESTAMP);
+            }
+
+            pstmt.setInt(8, booking.getUserId());
+            pstmt.setString(9, booking.getRemarks());
+            pstmt.setInt(10, booking.getBookingId());
+
+            return pstmt.executeUpdate() > 0;
+        }
+    }
+
     // ================= HELPER METHODS =================
     private String generateBookingRef() {
         // Generate a unique booking reference like "BK-20241215-12345"
         long timestamp = System.currentTimeMillis();
         int random = (int) (Math.random() * 10000);
-        return String.format("BK-%tY%tm%td-%04d", 
-            timestamp, timestamp, timestamp, random);
+        return String.format("BK-%tY%tm%td-%04d",
+                timestamp, timestamp, timestamp, random);
     }
 
     private double calculateAmountFromDuration(String duration) {
         if (duration == null || duration.isEmpty()) {
             return 5.00; // Default minimum charge
         }
-        
+
         try {
             // Parse duration string like "2 hours", "30 minutes", "1 day"
             String lowerDuration = duration.toLowerCase();
-            
+
             if (lowerDuration.contains("hour")) {
                 String[] parts = duration.split(" ");
                 double hours = Double.parseDouble(parts[0]);
@@ -371,7 +581,7 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
         } catch (Exception e) {
             // If parsing fails, use default rate
         }
-        
+
         return 5.00; // Default rate
     }
 
@@ -379,8 +589,8 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
     public int countBookings() throws SQLException {
         String sql = "SELECT COUNT(*) FROM " + getTableName();
         try (Connection conn = getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
             return rs.next() ? rs.getInt(1) : 0;
         }
     }
@@ -388,7 +598,7 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
     public int countBookingsByStatus(int status) throws SQLException {
         String sql = "SELECT COUNT(*) FROM " + getTableName() + " WHERE booking_status = ?";
         try (Connection conn = getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, status);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getInt(1) : 0;
@@ -399,7 +609,7 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
     public int countBookingsByUser(int userId) throws SQLException {
         String sql = "SELECT COUNT(*) FROM " + getTableName() + " WHERE user_id = ?";
         try (Connection conn = getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getInt(1) : 0;
@@ -409,42 +619,70 @@ public void approveBookingNow(int bookingId, int adminUserId) throws SQLExceptio
 
     // ================= DELETE METHOD =================
     public boolean delete(int bookingId) throws SQLException {
-        // Get booking first to free the slot
-        Booking booking = findById(bookingId);
-        if (booking == null) {
-            return false;
-        }
-        
-        Connection conn = getConnection();
+        Connection conn = null;
+        PreparedStatement psGet = null;
+        PreparedStatement psSlot = null;
+        PreparedStatement psDelete = null;
+        ResultSet rs = null;
+
         try {
+            conn = getConnection();
             conn.setAutoCommit(false);
-            
-            // 1️⃣ Free the slot if it's reserved/occupied by this booking
-            if (booking.getBookingStatus() == Booking.STATUS_PENDING || 
-                booking.getBookingStatus() == Booking.STATUS_APPROVED) {
-                
+
+            // 1️⃣ Get booking details
+            String getSql = "SELECT slot_id, booking_status FROM " + getTableName() + " WHERE booking_id = ?";
+            psGet = conn.prepareStatement(getSql);
+            psGet.setInt(1, bookingId);
+            rs = psGet.executeQuery();
+
+            if (!rs.next()) {
+                return false;
+            }
+
+            int slotId = rs.getInt("slot_id");
+            int bookingStatus = rs.getInt("booking_status");
+
+            // 2️⃣ Free the slot if it's reserved/occupied by this booking
+            if (bookingStatus == Booking.STATUS_PENDING || bookingStatus == Booking.STATUS_APPROVED) {
                 String slotSql = "UPDATE inet_vehicleparking.tbl_parking_slot SET parking_slot_status=?, user_id=NULL WHERE parking_slot_id=?";
-                try (PreparedStatement ps = conn.prepareStatement(slotSql)) {
-                    ps.setInt(1, ParkingSlot.STATUS_AVAILABLE);
-                    ps.setInt(2, booking.getSlotId());
-                    ps.executeUpdate();
-                }
+                psSlot = conn.prepareStatement(slotSql);
+                psSlot.setInt(1, ParkingSlot.STATUS_AVAILABLE);
+                psSlot.setInt(2, slotId);
+                psSlot.executeUpdate();
             }
-            
-            // 2️⃣ Delete the booking
-            String sql = "DELETE FROM " + getTableName() + " WHERE " + getIdColumnName() + " = ?";
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, bookingId);
-                int rows = ps.executeUpdate();
-                conn.commit();
-                return rows > 0;
-            }
-            
+
+            // 3️⃣ Delete the booking
+            String deleteSql = "DELETE FROM " + getTableName() + " WHERE " + getIdColumnName() + " = ?";
+            psDelete = conn.prepareStatement(deleteSql);
+            psDelete.setInt(1, bookingId);
+            int rows = psDelete.executeUpdate();
+
+            conn.commit();
+            return rows > 0;
+
         } catch (SQLException e) {
-            if (conn != null) conn.rollback();
+            if (conn != null)
+                conn.rollback();
             throw e;
         } finally {
-            if (conn != null) conn.close();
+            // Close resources but NOT the connection
+            if (rs != null)
+                rs.close();
+            if (psGet != null)
+                psGet.close();
+            if (psSlot != null)
+                psSlot.close();
+            if (psDelete != null)
+                psDelete.close();
+
+            // Reset auto-commit but DO NOT close connection
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 }

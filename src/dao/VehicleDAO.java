@@ -7,6 +7,7 @@ import java.util.List;
 import models.Vehicle;
 import models.VehicleCategory;
 import models.VehicleOwner;
+import utils.DatabaseConnection;
 
 public class VehicleDAO extends BaseDAO<Vehicle> {
 
@@ -27,66 +28,45 @@ public class VehicleDAO extends BaseDAO<Vehicle> {
         vehicle.setVehicleCategoryId(rs.getInt("vehicle_category_id"));
         vehicle.setVehiclePlateNumber(rs.getString("vehicle_plate_number"));
         vehicle.setVehicleDescription(rs.getString("vehicle_description"));
-        vehicle.setVehicleImage(rs.getBytes("vehicle_image"));
+        
+        // Handle BLOB safely
+        Blob imageBlob = rs.getBlob("vehicle_image");
+        if (imageBlob != null) {
+            vehicle.setVehicleImage(imageBlob.getBytes(1, (int) imageBlob.length()));
+        } else {
+            vehicle.setVehicleImage(null);
+        }
+        
         vehicle.setVehicleOwnerId(rs.getInt("vehicle_owner_id"));
         return vehicle;
     }
 
-    // Add this method to VehicleDAO.java
     /* ================= CREATE ================= */
 
-    
-    public Integer create(Vehicle vehicle) throws SQLException {
-        String sql = "INSERT INTO " + getTableName() +
-                " (vehicle_category_id, vehicle_plate_number, vehicle_description, vehicle_image, vehicle_owner_id) " +
-                "VALUES (?, ?, ?, ?, ?)";
-
-        try (Connection conn = getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
-            pstmt.setInt(1, vehicle.getVehicleCategoryId());
-            pstmt.setString(2, vehicle.getVehiclePlateNumber());
-            pstmt.setString(3, vehicle.getVehicleDescription());
-
-            if (vehicle.getVehicleImage() != null) {
-                pstmt.setBytes(4, vehicle.getVehicleImage());
-            } else {
-                pstmt.setNull(4, Types.BINARY);
-            }
-
-            pstmt.setInt(5, vehicle.getVehicleOwnerId());
-            pstmt.executeUpdate();
-
-            try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                return rs.next() ? rs.getInt(1) : null;
-            }
-        }
-    }
-
     public List<Vehicle> findByUserId(int userId) throws SQLException {
-    String sql = """
-        SELECT v.* 
-        FROM inet_vehicleparking.tbl_vehicle v
-        JOIN inet_vehicleparking.tbl_vehicle_owner vo ON v.vehicle_owner_id = vo.vehicle_owner_id
-        WHERE vo.user_id = ?
-    """;
-    
-    List<Vehicle> list = new ArrayList<>();
-    try (Connection conn = getConnection();
-        PreparedStatement pstmt = conn.prepareStatement(sql)) {
-        pstmt.setInt(1, userId);
-        try (ResultSet rs = pstmt.executeQuery()) {
-            while (rs.next()) {
-                list.add(mapResultSetToEntity(rs));
+        String sql = """
+            SELECT v.* 
+            FROM inet_vehicleparking.tbl_vehicle v
+            JOIN inet_vehicleparking.tbl_vehicle_owner vo ON v.vehicle_owner_id = vo.vehicle_owner_id
+            WHERE vo.user_id = ?
+        """;
+        
+        List<Vehicle> list = new ArrayList<>();
+        try (Connection conn = getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapResultSetToEntity(rs));
+                }
             }
         }
+        return list;
     }
-    return list;
-}
+    
     /* ================= READ ================= */
-
     public Vehicle findById(Integer id) throws SQLException {
-        String sql = "SELECT * FROM " + getTableName() + " WHERE vehicle_id=?";
+        String sql = "SELECT * FROM " + getTableName() + " WHERE vehicle_id = ?";
 
         try (Connection conn = getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -99,8 +79,7 @@ public class VehicleDAO extends BaseDAO<Vehicle> {
     }
 
     public Vehicle findByPlateNumber(String plateNumber) throws SQLException {
-        String sql = "SELECT * FROM " + getTableName() +
-                " WHERE vehicle_plate_number=?";
+        String sql = "SELECT * FROM " + getTableName() + " WHERE vehicle_plate_number = ?";
 
         try (Connection conn = getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -112,32 +91,30 @@ public class VehicleDAO extends BaseDAO<Vehicle> {
         }
     }
 
-    // In VehicleDAO.java - Add this method
-// In VehicleDAO.java
-public int getVehicleOwnerIdForUser(int userId) throws SQLException {
-    String sql = "SELECT vehicle_owner_id FROM inet_vehicleparking.tbl_vehicle_owner WHERE user_id = ?";
-    
-    try (Connection conn = getConnection();
-         PreparedStatement ps = conn.prepareStatement(sql)) {
-        ps.setInt(1, userId);
-        ResultSet rs = ps.executeQuery();
-        return rs.next() ? rs.getInt(1) : -1;
+    public int getVehicleOwnerIdForUser(int userId) throws SQLException {
+        String sql = "SELECT vehicle_owner_id FROM inet_vehicleparking.tbl_vehicle_owner WHERE user_id = ?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : -1;
+            }
+        }
     }
-}
 
     public Vehicle findByIdWithDetails(Integer id) throws SQLException {
         String sql = "SELECT v.*, vc.vehicle_category_name, vo.vehicle_owner_name " +
                 "FROM " + getTableName() + " v " +
                 "JOIN inet_vehicleparking.tbl_vehicle_category vc ON v.vehicle_category_id = vc.vehicle_category_id " +
                 "JOIN inet_vehicleparking.tbl_vehicle_owner vo ON v.vehicle_owner_id = vo.vehicle_owner_id " +
-                "WHERE v.vehicle_id=?";
+                "WHERE v.vehicle_id = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setInt(1, id);
             try (ResultSet rs = pstmt.executeQuery()) {
-
                 if (!rs.next()) return null;
 
                 Vehicle vehicle = mapResultSetToEntity(rs);
@@ -158,11 +135,9 @@ public int getVehicleOwnerIdForUser(int userId) throws SQLException {
     }
 
     public List<Vehicle> findAll() throws SQLException {
-        String sql = "SELECT * FROM " + getTableName() +
-                " ORDER BY vehicle_plate_number";
+        String sql = "SELECT * FROM " + getTableName() + " ORDER BY vehicle_plate_number";
 
         List<Vehicle> list = new ArrayList<>();
-
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
@@ -183,11 +158,9 @@ public int getVehicleOwnerIdForUser(int userId) throws SQLException {
     }
 
     private List<Vehicle> findByField(String field, Integer value) throws SQLException {
-        String sql = "SELECT * FROM " + getTableName() +
-                " WHERE " + field + "=? ORDER BY vehicle_plate_number";
+        String sql = "SELECT * FROM " + getTableName() + " WHERE " + field + " = ? ORDER BY vehicle_plate_number";
 
         List<Vehicle> list = new ArrayList<>();
-
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
@@ -202,11 +175,9 @@ public int getVehicleOwnerIdForUser(int userId) throws SQLException {
     }
 
     public List<Vehicle> searchByPlateNumber(String plate) throws SQLException {
-        String sql = "SELECT * FROM " + getTableName() +
-                " WHERE vehicle_plate_number ILIKE ? ORDER BY vehicle_plate_number";
+        String sql = "SELECT * FROM " + getTableName() + " WHERE vehicle_plate_number ILIKE ? ORDER BY vehicle_plate_number";
 
         List<Vehicle> list = new ArrayList<>();
-
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
@@ -221,11 +192,10 @@ public int getVehicleOwnerIdForUser(int userId) throws SQLException {
     }
 
     /* ================= UPDATE ================= */
-
     public boolean update(Vehicle vehicle) throws SQLException {
         String sql = "UPDATE " + getTableName() +
-                " SET vehicle_category_id=?, vehicle_plate_number=?, vehicle_description=?, " +
-                "vehicle_image=?, vehicle_owner_id=? WHERE vehicle_id=?";
+                " SET vehicle_category_id = ?, vehicle_plate_number = ?, vehicle_description = ?, " +
+                "vehicle_image = ?, vehicle_owner_id = ? WHERE vehicle_id = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -234,7 +204,7 @@ public int getVehicleOwnerIdForUser(int userId) throws SQLException {
             pstmt.setString(2, vehicle.getVehiclePlateNumber());
             pstmt.setString(3, vehicle.getVehicleDescription());
 
-            if (vehicle.getVehicleImage() != null) {
+            if (vehicle.getVehicleImage() != null && vehicle.getVehicleImage().length > 0) {
                 pstmt.setBytes(4, vehicle.getVehicleImage());
             } else {
                 pstmt.setNull(4, Types.BINARY);
@@ -248,10 +218,8 @@ public int getVehicleOwnerIdForUser(int userId) throws SQLException {
     }
 
     /* ================= DELETE ================= */
-
     public boolean delete(Integer id) throws SQLException {
-        String sql = "DELETE FROM " + getTableName() +
-                " WHERE vehicle_id=?";
+        String sql = "DELETE FROM " + getTableName() + " WHERE vehicle_id = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -262,21 +230,50 @@ public int getVehicleOwnerIdForUser(int userId) throws SQLException {
     }
 
     /* ================= COUNT ================= */
-
     public int countVehicles() throws SQLException {
         String sql = "SELECT COUNT(*) FROM " + getTableName();
-
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
-
-            return rs.next() ? rs.getInt(1) : 0;
+        
+        // Add connection validation and retry logic
+        int retryCount = 0;
+        int maxRetries = 3;
+        
+        while (retryCount < maxRetries) {
+            try (Connection conn = getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql);
+                 ResultSet rs = pstmt.executeQuery()) {
+                
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+                return 0;
+                
+            } catch (SQLException e) {
+                retryCount++;
+                System.err.println("Attempt " + retryCount + " failed for countVehicles(): " + e.getMessage());
+                
+                if (retryCount >= maxRetries) {
+                    throw new SQLException("Failed to count vehicles after " + maxRetries + " attempts", e);
+                }
+                
+                // Wait before retry
+                try {
+                    Thread.sleep(1000 * retryCount);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new SQLException("Count operation interrupted", ie);
+                }
+                
+                // Reset connection if it's a connection error
+                if (e.getMessage().contains("I/O") || e.getMessage().contains("connection")) {
+                    DatabaseConnection.closeConnection();
+                }
+            }
         }
+        return 0;
     }
 
     public int countVehiclesByOwner(Integer ownerId) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM " + getTableName() +
-                " WHERE vehicle_owner_id=?";
+        String sql = "SELECT COUNT(*) FROM " + getTableName() + " WHERE vehicle_owner_id = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -289,10 +286,8 @@ public int getVehicleOwnerIdForUser(int userId) throws SQLException {
     }
 
     /* ================= VALIDATION ================= */
-
     public boolean existsByPlateNumber(String plateNumber) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM " + getTableName() +
-                " WHERE vehicle_plate_number=?";
+        String sql = "SELECT COUNT(*) FROM " + getTableName() + " WHERE vehicle_plate_number = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -306,7 +301,7 @@ public int getVehicleOwnerIdForUser(int userId) throws SQLException {
 
     public boolean isVehicleAvailableForBooking(Integer vehicleId) throws SQLException {
         String sql = "SELECT COUNT(*) FROM inet_vehicleparking.tbl_booking " +
-                "WHERE vehicle_id=? AND booking_status IN (1,2)";
+                "WHERE vehicle_id = ? AND booking_status IN (1, 2)";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -314,6 +309,92 @@ public int getVehicleOwnerIdForUser(int userId) throws SQLException {
             pstmt.setInt(1, vehicleId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 return rs.next() && rs.getInt(1) == 0;
+            }
+        }
+    }
+    
+    /* ================= ADDITIONAL UTILITY METHODS ================= */
+    public int countVehiclesWithStatus() throws SQLException {
+        // If you need to count vehicles with booking status, use this
+        String sql = """
+            SELECT COUNT(DISTINCT v.vehicle_id) 
+            FROM inet_vehicleparking.tbl_vehicle v
+            LEFT JOIN inet_vehicleparking.tbl_booking b ON v.vehicle_id = b.vehicle_id
+            WHERE b.booking_status = 1 OR b.booking_status IS NULL
+        """;
+        
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+
+    public List<Vehicle> findByVehicleOwnerId(Integer ownerId) throws SQLException {
+        String sql = "SELECT * FROM " + getTableName() + " WHERE vehicle_owner_id = ? ORDER BY vehicle_plate_number";
+
+        List<Vehicle> list = new ArrayList<>();
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, ownerId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapResultSetToEntity(rs));
+                }
+            }
+        }
+        return list;
+    }
+    
+    /* ================= CREATE ================= */
+public Integer create(Vehicle vehicle) throws SQLException {
+    String sql = "INSERT INTO " + getTableName() +
+                " (vehicle_category_id, vehicle_plate_number, vehicle_description, vehicle_owner_id) " +
+                "VALUES (?, ?, ?, ?)";
+
+    try (Connection conn = getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+        pstmt.setInt(1, vehicle.getVehicleCategoryId());
+        pstmt.setString(2, vehicle.getVehiclePlateNumber());
+        pstmt.setString(3, vehicle.getVehicleDescription());
+        pstmt.setInt(4, vehicle.getVehicleOwnerId());
+        
+        int affectedRows = pstmt.executeUpdate();
+        if (affectedRows == 0) {
+            throw new SQLException("Creating vehicle failed, no rows affected.");
+        }
+
+        try (ResultSet rs = pstmt.getGeneratedKeys()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            } else {
+                throw new SQLException("Creating vehicle failed, no ID obtained.");
+            }
+        }
+    }
+}
+    // Helper method to get connection with validation
+    private Connection getValidConnection() throws SQLException {
+        Connection conn = getConnection();
+        if (conn == null || conn.isClosed()) {
+            throw new SQLException("Database connection is not available");
+        }
+        return conn;
+    }
+
+     public boolean licensePlateExists(String licensePlate) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM " + getTableName() + 
+                    " WHERE vehicle_plate_number = ?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, licensePlate);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
             }
         }
     }

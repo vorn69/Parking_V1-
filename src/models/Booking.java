@@ -54,7 +54,35 @@ public class Booking {
     private Double totalAmount;
     private Integer approvedBy;
     private String bookingRef;
+// In Booking.java, add these fields:
+private Timestamp actualEndTime;
+private Timestamp createdAt;
+private Timestamp updatedAt;
 
+// Add getters and setters:
+public Timestamp getActualEndTime() {
+    return actualEndTime;
+}
+
+public void setActualEndTime(Timestamp actualEndTime) {
+    this.actualEndTime = actualEndTime;
+}
+
+public Timestamp getCreatedAt() {
+    return createdAt;
+}
+
+public void setCreatedAt(Timestamp createdAt) {
+    this.createdAt = createdAt;
+}
+
+public Timestamp getUpdatedAt() {
+    return updatedAt;
+}
+
+public void setUpdatedAt(Timestamp updatedAt) {
+    this.updatedAt = updatedAt;
+}
     // Relations (optional - for joined queries)
     private User customer;
     private Vehicle vehicle;

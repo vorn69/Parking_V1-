@@ -1,4 +1,3 @@
-// src/dao/VehicleCategoryDAO.java
 package dao;
 
 import java.sql.*;
@@ -27,6 +26,7 @@ public class VehicleCategoryDAO extends BaseDAO<VehicleCategory> {
         return category;
     }
     
+    // CRUD Operations - KEEP 3 PARAMETERS!
     public Integer create(VehicleCategory category) throws SQLException {
         String sql = "INSERT INTO " + getTableName() + " (vehicle_category_name, user_id) VALUES (?, ?)";
         
@@ -53,7 +53,7 @@ public class VehicleCategoryDAO extends BaseDAO<VehicleCategory> {
             }
             return null;
         } finally {
-            closeResources(conn, pstmt, rs);
+            closeResources(conn, pstmt, rs);  // KEEP 3 PARAMETERS
         }
     }
     
@@ -75,7 +75,7 @@ public class VehicleCategoryDAO extends BaseDAO<VehicleCategory> {
             }
             return null;
         } finally {
-            closeResources(conn, pstmt, rs);
+            closeResources(conn, pstmt, rs);  // KEEP 3 PARAMETERS
         }
     }
     
@@ -97,7 +97,7 @@ public class VehicleCategoryDAO extends BaseDAO<VehicleCategory> {
             }
             return categories;
         } finally {
-            closeResources(conn, pstmt, rs);
+            closeResources(conn, pstmt, rs);  // KEEP 3 PARAMETERS
         }
     }
     
@@ -123,7 +123,7 @@ public class VehicleCategoryDAO extends BaseDAO<VehicleCategory> {
             
             return pstmt.executeUpdate() > 0;
         } finally {
-            closeResources(conn, pstmt, null);
+            closeResources(conn, pstmt, null);  // KEEP 3 PARAMETERS
         }
     }
     
@@ -140,7 +140,7 @@ public class VehicleCategoryDAO extends BaseDAO<VehicleCategory> {
             
             return pstmt.executeUpdate() > 0;
         } finally {
-            closeResources(conn, pstmt, null);
+            closeResources(conn, pstmt, null);  // KEEP 3 PARAMETERS
         }
     }
     
@@ -162,7 +162,7 @@ public class VehicleCategoryDAO extends BaseDAO<VehicleCategory> {
             }
             return false;
         } finally {
-            closeResources(conn, pstmt, rs);
+            closeResources(conn, pstmt, rs);  // KEEP 3 PARAMETERS
         }
     }
     
@@ -184,7 +184,7 @@ public class VehicleCategoryDAO extends BaseDAO<VehicleCategory> {
             }
             return 0;
         } finally {
-            closeResources(conn, pstmt, rs);
+            closeResources(conn, pstmt, rs);  // KEEP 3 PARAMETERS
         }
     }
 }
