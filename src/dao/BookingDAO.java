@@ -176,6 +176,8 @@ public class BookingDAO extends BaseDAO<Booking> {
             psSlot.executeUpdate();
 
             conn.commit();
+
+            conn.commit();
             return bookingId;
 
         } catch (SQLException e) {
@@ -196,6 +198,7 @@ public class BookingDAO extends BaseDAO<Booking> {
             if (conn != null) {
                 try {
                     conn.setAutoCommit(true);
+                    conn.close();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -383,6 +386,7 @@ public class BookingDAO extends BaseDAO<Booking> {
             if (conn != null) {
                 try {
                     conn.setAutoCommit(true);
+                    conn.close();
                 } catch (SQLException e) {
                     System.err.println("⚠️ DEBUG: Failed to reset auto-commit: " + e.getMessage());
                 }
@@ -466,6 +470,7 @@ public class BookingDAO extends BaseDAO<Booking> {
             if (conn != null) {
                 try {
                     conn.setAutoCommit(true);
+                    conn.close();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -679,6 +684,7 @@ public class BookingDAO extends BaseDAO<Booking> {
             if (conn != null) {
                 try {
                     conn.setAutoCommit(true);
+                    conn.close();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }

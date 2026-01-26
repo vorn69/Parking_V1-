@@ -208,11 +208,11 @@ public class Payment {
             throw new IllegalArgumentException("Payment amount must be positive");
         }
 
-        this.paidAmount = amount;
+        this.paidAmount = (this.paidAmount != null ? this.paidAmount : 0) + amount;
         this.paidBy = paidBy;
         this.paymentDate = new Date();
 
-        if (dueAmount != null && amount >= dueAmount) {
+        if (dueAmount != null && this.paidAmount >= dueAmount) {
             this.paymentStatus = STATUS_PAID;
         } else {
             this.paymentStatus = STATUS_PARTIAL;
@@ -225,9 +225,11 @@ public class Payment {
         }
 
         return switch (paymentStatus) {
-            case STATUS_PENDING -> "PENDING";
+            case STATUS_PENDING_APPROVAL -> "PENDING APPROVAL";
+            case STATUS_APPROVED_UNPAID -> "APPROVED (UNPAID)";
             case STATUS_PAID -> "PAID";
             case STATUS_PARTIAL -> "PARTIAL";
+            case STATUS_CANCELLED -> "CANCELLED";
             default -> "INVALID (" + paymentStatus + ")";
         };
     }

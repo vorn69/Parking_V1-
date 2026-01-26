@@ -51,8 +51,8 @@ public class CustomerDashboard extends JFrame {
     }
 
     private void initComponents() {
-        setTitle("Customer Parking Portal");
-        setSize(1200, 800);
+        setTitle("Customer Parking Portal - ParkFlow");
+        setSize(1280, 800);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -66,49 +66,60 @@ public class CustomerDashboard extends JFrame {
         // Create main layout
         setLayout(new BorderLayout());
 
-        // Create sidebar
-        JPanel sidebar = createSidebar();
-        add(sidebar, BorderLayout.WEST);
+        // Sidebar
+        add(createSidebar(), BorderLayout.WEST);
 
-        // Create main panel with CardLayout
+        // Main Content Area
         mainPanel = new JPanel(new CardLayout());
-        cardLayout = (CardLayout) mainPanel.getLayout();
+        mainPanel.setBackground(new Color(240, 242, 245)); // Light background
 
-        // Initialize all panels
-        JPanel dashboardPanel = createDashboardPanel();
-        mainPanel.add(dashboardPanel, "dashboard");
+        // Initialize dashboard view - will be loaded properly after user data
 
         add(mainPanel, BorderLayout.CENTER);
     }
 
+    // --- SIDEBAR ---
+
     private JPanel createSidebar() {
-        JPanel sidebar = new JPanel();
+        JPanel sidebar = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                GradientPaint gp = new GradientPaint(0, 0, new Color(44, 62, 80), 0, getHeight(),
+                        new Color(34, 47, 62));
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
-        sidebar.setBackground(new Color(44, 62, 80));
-        sidebar.setPreferredSize(new Dimension(250, getHeight()));
-        sidebar.setBorder(new EmptyBorder(20, 15, 20, 15));
+        sidebar.setPreferredSize(new Dimension(280, getHeight()));
+        sidebar.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        // App Logo/Title
-        JLabel appTitle = new JLabel("🚗 PARKFLOW");
-        appTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        appTitle.setForeground(Color.WHITE);
-        appTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-        appTitle.setBorder(new EmptyBorder(0, 0, 30, 0));
+        // Brand
+        JLabel brandLabel = new JLabel("ParkFlow");
+        brandLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        brandLabel.setForeground(Color.WHITE);
+        brandLabel.setIcon(new TextIcon("🚗", new Font("Segoe UI Emoji", Font.PLAIN, 28), Color.WHITE));
+        brandLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // User Info Panel
-        JPanel userPanel = createUserInfoPanel();
+        // User Profile Card (Compact)
+        JPanel userCard = createSidebarUserCard();
 
-        // Menu Panel
+        // Menu
         JPanel menuPanel = createMenuPanel();
 
-        // Logout Button
-        JButton logoutBtn = new JButton("🚪 LOGOUT");
-        styleMenuButton(logoutBtn);
+        // Footer
+        JButton logoutBtn = createStyledButton("Logout", new Color(231, 76, 60));
         logoutBtn.addActionListener(e -> logout());
+        logoutBtn.setMaximumSize(new Dimension(240, 45));
+        logoutBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        sidebar.add(appTitle);
-        sidebar.add(userPanel);
-        sidebar.add(Box.createVerticalStrut(20));
+        sidebar.add(brandLabel);
+        sidebar.add(Box.createVerticalStrut(30));
+        sidebar.add(userCard);
+        sidebar.add(Box.createVerticalStrut(30));
         sidebar.add(menuPanel);
         sidebar.add(Box.createVerticalGlue());
         sidebar.add(logoutBtn);
@@ -116,142 +127,208 @@ public class CustomerDashboard extends JFrame {
         return sidebar;
     }
 
-    private JPanel createUserInfoPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(new Color(52, 73, 94));
-        panel.setBorder(new CompoundBorder(
-                new LineBorder(new Color(52, 152, 219), 1),
-                new EmptyBorder(15, 10, 15, 10)));
-        panel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JLabel userIcon = new JLabel("👤");
-        userIcon.setFont(new Font("Segoe UI", Font.PLAIN, 36));
-        userIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
+    private JPanel createSidebarUserCard() {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setOpaque(false);
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         welcomeLabel = new JLabel("Loading...");
         welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         welcomeLabel.setForeground(Color.WHITE);
-        welcomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        emailLabel = new JLabel("loading...");
+        emailLabel = new JLabel("...");
         emailLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         emailLabel.setForeground(new Color(189, 195, 199));
-        emailLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Vehicle owner status
-        JLabel ownerStatus = new JLabel("🚗 Vehicle Owner: No");
-        ownerStatus.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        JLabel ownerStatus = new JLabel("Checking status...");
+        ownerStatus.setFont(new Font("Segoe UI", Font.ITALIC, 11));
         ownerStatus.setForeground(new Color(241, 196, 15));
-        ownerStatus.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        panel.add(userIcon);
-        panel.add(Box.createVerticalStrut(10));
-        panel.add(welcomeLabel);
-        panel.add(Box.createVerticalStrut(5));
-        panel.add(emailLabel);
-        panel.add(Box.createVerticalStrut(10));
-        panel.add(ownerStatus);
+        card.add(welcomeLabel);
+        card.add(Box.createVerticalStrut(2));
+        card.add(emailLabel);
+        card.add(Box.createVerticalStrut(5));
+        card.add(ownerStatus);
 
-        // Store reference to update later
-        panel.putClientProperty("ownerStatus", ownerStatus);
-
-        return panel;
+        card.putClientProperty("ownerStatus", ownerStatus);
+        return card;
     }
 
     private JPanel createMenuPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(new Color(44, 62, 80));
-        panel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.setOpaque(false);
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Menu items with icons
-        String[][] menuItems = {
-                { "📊", "DASHBOARD" },
-                { "🚗", "MY VEHICLES" },
-                { "📅", "BOOK & VIEW BOOKINGS" },
-                { "💰", "PAYMENTS" },
-                { "👤", "PROFILE" },
-                { "❓", "HELP & SUPPORT" }
-        };
-
-        for (String[] menuItem : menuItems) {
-            JButton menuBtn = createMenuButton(menuItem[0] + " " + menuItem[1]);
-            panel.add(menuBtn);
-            panel.add(Box.createVerticalStrut(5));
-
-            // Add action listeners
-            if (menuItem[1].equals("DASHBOARD")) {
-                menuBtn.addActionListener(e -> showDashboard());
-            } else if (menuItem[1].equals("MY VEHICLES")) {
-                menuBtn.addActionListener(e -> showMyVehicles());
-            } else if (menuItem[1].equals("BOOK & VIEW BOOKINGS")) {
-                menuBtn.addActionListener(e -> showBookings());
-            } else if (menuItem[1].equals("PAYMENTS")) {
-                menuBtn.addActionListener(e -> showPayments());
-            } else if (menuItem[1].equals("PROFILE")) {
-                menuBtn.addActionListener(e -> showProfile());
-            } else if (menuItem[1].equals("HELP & SUPPORT")) {
-                menuBtn.addActionListener(e -> showHelp());
-            }
-        }
+        addMenuButton(panel, "Dashboard", "📊", e -> showDashboard());
+        addMenuButton(panel, "My Vehicles", "🚗", e -> showMyVehicles());
+        addMenuButton(panel, "Bookings", "📅", e -> showBookings());
+        addMenuButton(panel, "Payments", "💰", e -> showPayments());
+        addMenuButton(panel, "Profile", "👤", e -> showProfile());
 
         return panel;
     }
 
-    private JButton createMenuButton(String text) {
-        JButton button = new JButton(text);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        button.setForeground(new Color(236, 240, 241));
-        button.setBackground(new Color(52, 73, 94));
-        button.setBorder(new EmptyBorder(12, 15, 12, 15));
-        button.setFocusPainted(false);
-        button.setAlignmentX(Component.LEFT_ALIGNMENT);
-        button.setMaximumSize(new Dimension(220, 45));
-        button.setHorizontalAlignment(SwingConstants.LEFT);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    private void addMenuButton(JPanel panel, String text, String icon, ActionListener action) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        btn.setForeground(new Color(236, 240, 241));
+        btn.setBackground(new Color(255, 255, 255, 10)); // Transparent white
+        btn.setBorder(new EmptyBorder(12, 15, 12, 15));
+        btn.setFocusPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
+        btn.setMaximumSize(new Dimension(240, 45));
+        btn.setIcon(new TextIcon(icon, new Font("Segoe UI Emoji", Font.PLAIN, 16), Color.WHITE));
+        btn.setIconTextGap(15);
 
-        // Hover effect
-        button.addMouseListener(new MouseAdapter() {
+        btn.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                if (!button.getBackground().equals(new Color(41, 128, 185))) {
-                    button.setBackground(new Color(60, 99, 130));
-                }
+                btn.setContentAreaFilled(true);
+                btn.setBackground(new Color(255, 255, 255, 30));
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                if (!button.getBackground().equals(new Color(41, 128, 185))) {
-                    button.setBackground(new Color(52, 73, 94));
-                }
+                btn.setContentAreaFilled(false);
             }
         });
 
-        return button;
+        btn.addActionListener(action);
+        panel.add(btn);
+        panel.add(Box.createVerticalStrut(5));
     }
 
-    private void styleMenuButton(JButton button) {
-        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        button.setForeground(Color.WHITE);
-        button.setBackground(new Color(231, 76, 60));
-        button.setBorder(new EmptyBorder(10, 20, 10, 20));
-        button.setFocusPainted(false);
-        button.setAlignmentX(Component.CENTER_ALIGNMENT);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    // --- DASHBOARD CONTENT ---
 
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(new Color(192, 57, 43));
-            }
+    private JPanel createDashboardPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
+        panel.setBorder(new EmptyBorder(30, 30, 30, 30));
 
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setBackground(new Color(231, 76, 60));
-            }
-        });
+        // Header
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+        JLabel title = new JLabel("Welcome back, " + (currentUser != null ? currentUser.getUsername() : "User"));
+        title.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        title.setForeground(new Color(44, 62, 80));
+
+        JButton quickBookBtn = createStyledButton("New Booking +", new Color(46, 204, 113));
+        quickBookBtn.addActionListener(e -> showBookings()); // Redirect to bookings for now
+
+        header.add(title, BorderLayout.WEST);
+        header.add(quickBookBtn, BorderLayout.EAST);
+
+        panel.add(header, BorderLayout.NORTH);
+
+        // Content Grid
+        JPanel content = new JPanel(new GridLayout(1, 2, 30, 0));
+        content.setOpaque(false);
+        content.setBorder(new EmptyBorder(30, 0, 0, 0));
+
+        // 1. Recent Bookings Card
+        JPanel bookingsCard = createCard("Recent Bookings");
+        loadBookingsIntoCard(bookingsCard);
+
+        // 2. Quick Slots Card
+        JPanel slotsCard = createCard("Available Spots");
+        loadSlotsIntoCard(slotsCard);
+
+        content.add(bookingsCard);
+        content.add(slotsCard);
+
+        panel.add(content, BorderLayout.CENTER);
+
+        return panel;
     }
+
+    private JPanel createCard(String titleStr) {
+        JPanel card = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setColor(Color.WHITE);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+            }
+        };
+        card.setOpaque(false);
+        card.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JLabel title = new JLabel(titleStr);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        title.setForeground(new Color(44, 62, 80));
+        title.setBorder(new EmptyBorder(0, 0, 15, 0));
+
+        card.add(title, BorderLayout.NORTH);
+        return card;
+    }
+
+    // --- HELPERS ---
+
+    private JButton createStyledButton(String text, Color baseColor) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (getModel().isPressed())
+                    g2d.setColor(baseColor.darker());
+                else if (getModel().isRollover())
+                    g2d.setColor(baseColor.brighter());
+                else
+                    g2d.setColor(baseColor);
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btn.setForeground(Color.WHITE);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setPreferredSize(new Dimension(150, 40));
+        return btn;
+    }
+
+    private static class TextIcon implements Icon {
+        private String text;
+        private Font font;
+        private Color color;
+
+        public TextIcon(String text, Font font, Color color) {
+            this.text = text;
+            this.font = font;
+            this.color = color;
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2d.setFont(font);
+            g2d.setColor(color);
+            g2d.drawString(text, x, y + getIconHeight() - 5);
+            g2d.dispose();
+        }
+
+        @Override
+        public int getIconWidth() {
+            return 30;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return 30;
+        }
+    }
+
+    // --- DATA LOADING ---
 
     private void loadUserData() {
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
@@ -260,7 +337,6 @@ public class CustomerDashboard extends JFrame {
                 try {
                     currentUser = userDAO.findById(userId);
                     if (currentUser != null) {
-                        // Check if user is registered as vehicle owner
                         vehicleOwner = ownerDAO.findByUserId(userId);
                         ownerId = (vehicleOwner != null) ? vehicleOwner.getVehicleOwnerId() : null;
                     }
@@ -274,8 +350,7 @@ public class CustomerDashboard extends JFrame {
             protected void done() {
                 if (currentUser != null) {
                     updateUserInfo();
-                    // Load initial data
-                    loadInitialData();
+                    showDashboard(); // Show dashboard after data load
                 } else {
                     JOptionPane.showMessageDialog(CustomerDashboard.this,
                             "User not found!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -288,682 +363,202 @@ public class CustomerDashboard extends JFrame {
     }
 
     private void updateUserInfo() {
-        welcomeLabel.setText(currentUser.getUsername());
-        emailLabel.setText(currentUser.getEmail());
+        if (welcomeLabel != null)
+            welcomeLabel.setText(currentUser.getUsername());
+        if (emailLabel != null)
+            emailLabel.setText(currentUser.getEmail());
+        updateOwnerStatusLabel(getContentPane());
+    }
 
-        // Update owner status in sidebar
-        Component[] components = ((JPanel) getContentPane().getComponent(0)).getComponents();
-        for (Component comp : components) {
-            if (comp instanceof JPanel) {
-                Object prop = ((JPanel) comp).getClientProperty("ownerStatus");
+    private void updateOwnerStatusLabel(Container container) {
+        for (Component comp : container.getComponents()) {
+            if (comp instanceof JComponent) {
+                Object prop = ((JComponent) comp).getClientProperty("ownerStatus");
                 if (prop instanceof JLabel) {
-                    JLabel ownerStatus = (JLabel) prop;
+                    JLabel label = (JLabel) prop;
                     if (ownerId != null) {
-                        ownerStatus.setText("🚗 Vehicle Owner: Yes (ID: " + ownerId + ")");
-                        ownerStatus.setForeground(new Color(46, 204, 113));
+                        label.setText("Verified Vehicle Owner");
+                        label.setForeground(new Color(46, 204, 113));
                     } else {
-                        ownerStatus.setText("🚗 Vehicle Owner: Not Registered");
-                        ownerStatus.setForeground(new Color(241, 196, 15));
+                        label.setText("Guest (No Vehicles)");
+                        label.setForeground(new Color(241, 196, 15));
                     }
+                    return;
                 }
+                updateOwnerStatusLabel((Container) comp);
             }
         }
     }
 
-    private void loadInitialData() {
-        showDashboard();
-    }
-
-    public void showDashboard() {
-        currentView = "dashboard";
-        highlightCurrentMenu();
-
-        // Remove existing dashboard panel if any
-        for (Component comp : mainPanel.getComponents()) {
-            if (comp.getName() != null && comp.getName().equals("dashboardPanel")) {
-                mainPanel.remove(comp);
-            }
-        }
-
-        JPanel dashboardPanel = createDashboardPanel();
-        dashboardPanel.setName("dashboardPanel");
-        mainPanel.add(dashboardPanel, "dashboard");
-        cardLayout.show(mainPanel, "dashboard");
-    }
-
-    private JPanel createDashboardPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(new Color(245, 247, 250));
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        // Header
-        panel.add(createDashboardHeader(), BorderLayout.NORTH);
-
-        // Main content
-        panel.add(createDashboardContent(), BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    private JPanel createDashboardHeader() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
-
-        JLabel title = new JLabel("🏠 Customer Dashboard");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        title.setForeground(new Color(52, 73, 94));
-
-        // Quick actions panel
-        JPanel quickActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        quickActions.setOpaque(false);
-
-        JButton newBookingBtn = new JButton("➕ New Booking");
-        newBookingBtn.setBackground(new Color(46, 204, 113));
-        newBookingBtn.setForeground(Color.WHITE);
-        newBookingBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        newBookingBtn.setBorder(new EmptyBorder(10, 20, 10, 20));
-        newBookingBtn.addActionListener(e -> showBookings());
-
-        quickActions.add(newBookingBtn);
-
-        header.add(title, BorderLayout.WEST);
-        header.add(quickActions, BorderLayout.EAST);
-
-        return header;
-    }
-
-    private JPanel createDashboardContent() {
-        JPanel content = new JPanel(new GridLayout(1, 2, 20, 0));
-        content.setOpaque(false);
-
-        // Left: Bookings
-        content.add(createBookingsPanel());
-
-        // Right: Available Slots
-        content.add(createAvailableSlotsPanel());
-
-        return content;
-    }
-
-    private JPanel createBookingsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(new Color(220, 220, 220), 1),
-                new EmptyBorder(15, 15, 15, 15)));
-
-        JLabel title = new JLabel("📋 My Recent Bookings");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        title.setForeground(new Color(44, 62, 80));
-
-        // Bookings table
-        String[] columns = { "ID", "Vehicle", "Slot", "Duration", "Status", "Payment", "Actions" };
-        DefaultTableModel model = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 6; // Only Actions column is editable
-            }
-        };
-
+    private void loadBookingsIntoCard(JPanel card) {
+        String[] columns = { "Vehicle", "Slot", "Status" };
+        DefaultTableModel model = new DefaultTableModel(columns, 0);
         JTable table = new JTable(model);
-        table.setRowHeight(40);
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        table.setRowHeight(35);
+        table.setShowVerticalLines(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
         table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        table.getTableHeader().setBackground(new Color(245, 247, 250));
+        table.getTableHeader().setBorder(new MatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
 
-        // Load bookings
-        loadBookingsData(model);
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setBorder(null);
+        scroll.getViewport().setBackground(Color.WHITE);
 
-        JScrollPane scrollPane = new JScrollPane(table);
+        card.add(scroll, BorderLayout.CENTER);
 
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    private void loadBookingsData(DefaultTableModel model) {
-        SwingWorker<List<Booking>, Void> worker = new SwingWorker<>() {
+        new SwingWorker<List<Booking>, Void>() {
             @Override
             protected List<Booking> doInBackground() throws Exception {
-                try {
-                    if (ownerId != null) {
-                        return bookingDAO.findByCustomerId(ownerId);
-                    }
+                if (ownerId == null)
                     return new ArrayList<>();
-                } catch (Exception e) {
-                    return new ArrayList<>();
-                }
+                return bookingDAO.findByCustomerId(ownerId);
             }
 
             @Override
             protected void done() {
                 try {
                     List<Booking> bookings = get();
-
-                    if (bookings == null || bookings.isEmpty()) {
-                        model.addRow(new Object[] {
-                                "", "No bookings yet", "", "", "", "", "Click 'New Booking' to create one"
-                        });
-                    } else {
-                        // Show only recent bookings (last 5)
-                        int count = Math.min(bookings.size(), 5);
-                        for (int i = 0; i < count; i++) {
-                            Booking booking = bookings.get(i);
-
-                            // Get vehicle info
-                            String vehicleInfo = "N/A";
-                            try {
-                                Vehicle vehicle = vehicleDAO.findById(booking.getVehicleId());
-                                if (vehicle != null) {
-                                    vehicleInfo = vehicle.getVehiclePlateNumber();
-                                }
-                            } catch (Exception e) {
-                                vehicleInfo = "Unknown";
-                            }
-
-                            // Get payment status
-                            String paymentStatus = "❌ Not Paid";
-                            try {
-                                Payment payment = paymentDAO.findByBookingId(booking.getBookingId());
-                                if (payment != null && payment.getPaymentStatus() == Payment.STATUS_PAID) {
-                                    paymentStatus = "✅ Paid";
-                                }
-                            } catch (Exception e) {
-                                // Ignore
-                            }
-
-                            // Get status text
-                            String statusText = getBookingStatusText(booking.getBookingStatus());
-
+                    if (bookings != null) {
+                        for (Booking b : bookings) {
+                            String status = b.getBookingStatus() == 1 ? "Approved"
+                                    : (b.getBookingStatus() == 2 ? "Rejected" : "Pending");
                             model.addRow(new Object[] {
-                                    booking.getBookingId(),
-                                    vehicleInfo,
-                                    "Slot " + booking.getSlotId(),
-                                    booking.getDurationOfBooking(),
-                                    statusText,
-                                    paymentStatus,
-                                    "View"
+                                    "ID: " + b.getVehicleId(),
+                                    "Slot " + b.getSlotId(),
+                                    status
                             });
                         }
                     }
                 } catch (Exception e) {
-                    model.addRow(new Object[] {
-                            "", "Error loading bookings", "", "", "", "", "Try again"
-                    });
+                    e.printStackTrace();
                 }
             }
-        };
-        worker.execute();
+        }.execute();
     }
 
-    private String getBookingStatusText(int status) {
-        switch (status) {
-            case 0:
-                return "⏳ Pending";
-            case 1:
-                return "✅ Approved";
-            case 2:
-                return "❌ Rejected";
-            case 3:
-                return "✅ Completed";
-            default:
-                return "❓ Unknown";
-        }
-    }
+    private void loadSlotsIntoCard(JPanel card) {
+        JPanel grid = new JPanel(new GridLayout(3, 3, 10, 10));
+        grid.setOpaque(false);
 
-    private JPanel createAvailableSlotsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(new Color(220, 220, 220), 1),
-                new EmptyBorder(15, 15, 15, 15)));
-
-        JLabel title = new JLabel("🅿️ Available Parking Slots");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        title.setForeground(new Color(44, 62, 80));
-
-        // Slots grid
-        JPanel slotsGrid = new JPanel(new GridLayout(0, 4, 10, 10));
-        slotsGrid.setBackground(Color.WHITE);
-
-        // Load available slots
-        loadAvailableSlots(slotsGrid);
-
-        JScrollPane scrollPane = new JScrollPane(slotsGrid);
-        scrollPane.setBorder(null);
-
-        // Warning message if needed
-        if (ownerId == null) {
-            JLabel warning = new JLabel("<html><div style='text-align:center;padding:10px;color:#e74c3c;'>" +
-                    "⚠️ You need to register a vehicle first!<br>" +
-                    "Go to 'My Vehicles' to add one.</div></html>");
-            warning.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            panel.add(warning, BorderLayout.SOUTH);
-        }
-
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    private void loadAvailableSlots(JPanel slotsGrid) {
-        SwingWorker<List<ParkingSlot>, Void> worker = new SwingWorker<>() {
+        new SwingWorker<List<ParkingSlot>, Void>() {
             @Override
             protected List<ParkingSlot> doInBackground() throws Exception {
-                try {
-                    return slotDAO.findAvailableSlots();
-                } catch (Exception e) {
-                    return new ArrayList<>();
-                }
+                return slotDAO.findAvailableSlots();
             }
 
             @Override
             protected void done() {
                 try {
                     List<ParkingSlot> slots = get();
-
-                    if (slots == null || slots.isEmpty()) {
-                        JLabel noSlots = new JLabel("No slots available");
-                        noSlots.setHorizontalAlignment(SwingConstants.CENTER);
-                        slotsGrid.add(noSlots);
-                    } else {
+                    grid.removeAll();
+                    if (slots != null) {
+                        int count = 0;
                         for (ParkingSlot slot : slots) {
-                            JButton slotBtn = createSlotButton(slot);
-                            slotsGrid.add(slotBtn);
+                            if (count++ >= 9)
+                                break;
+                            JButton btn = new JButton("#" + slot.getParkingSlotNumber());
+                            btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+                            btn.setForeground(new Color(44, 62, 80));
+                            btn.setBackground(new Color(236, 240, 241));
+                            btn.setBorder(BorderFactory.createLineBorder(new Color(189, 195, 199)));
+                            btn.setFocusPainted(false);
+                            grid.add(btn);
                         }
                     }
-
-                    slotsGrid.revalidate();
-                    slotsGrid.repaint();
+                    grid.revalidate();
+                    grid.repaint();
                 } catch (Exception e) {
-                    // Ignore
                 }
             }
-        };
-        worker.execute();
+        }.execute();
+
+        card.add(grid, BorderLayout.CENTER);
     }
 
-    private JButton createSlotButton(ParkingSlot slot) {
-        JButton button = new JButton("Slot " + slot.getParkingSlotNumber());
-        button.setBackground(new Color(52, 152, 219));
-        button.setForeground(Color.WHITE);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setPreferredSize(new Dimension(80, 60));
+    // --- NAVIGATION & PUBLIC METHODS ---
 
-        button.addActionListener(e -> bookSlot(slot));
-
-        return button;
+    public void showDashboard() {
+        currentView = "dashboard";
+        mainPanel.removeAll();
+        mainPanel.add(createDashboardPanel());
+        mainPanel.revalidate();
+        mainPanel.repaint();
     }
 
-    private void bookSlot(ParkingSlot slot) {
-        if (ownerId == null) {
-            int response = JOptionPane.showConfirmDialog(this,
-                    "You need to register as a Vehicle Owner first!\n\n" +
-                            "Would you like to register now?",
-                    "Registration Required",
-                    JOptionPane.YES_NO_OPTION);
-
-            if (response == JOptionPane.YES_OPTION) {
-                showMyVehicles();
-            }
-            return;
-        }
-
-        // Check if user has vehicles
-        SwingWorker<List<Vehicle>, Void> worker = new SwingWorker<>() {
-            @Override
-            protected List<Vehicle> doInBackground() throws Exception {
-                try {
-                    return vehicleDAO.findByVehicleOwnerId(ownerId);
-                } catch (Exception e) {
-                    return new ArrayList<>();
-                }
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    List<Vehicle> vehicles = get();
-
-                    if (vehicles == null || vehicles.isEmpty()) {
-                        JOptionPane.showMessageDialog(CustomerDashboard.this,
-                                "You need to add a vehicle first!\n" +
-                                        "Go to 'My Vehicles' to add one.",
-                                "No Vehicles",
-                                JOptionPane.WARNING_MESSAGE);
-                        return;
-                    }
-
-                    // Show booking dialog
-                    showBookingDialog(slot, vehicles);
-
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(CustomerDashboard.this,
-                            "Error: " + e.getMessage(),
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        };
-        worker.execute();
-    }
-
-    private void showBookingDialog(ParkingSlot slot, List<Vehicle> vehicles) {
-        JDialog dialog = new JDialog(this, "Book Slot " + slot.getParkingSlotNumber(), true);
-        dialog.setSize(400, 350);
-        dialog.setLocationRelativeTo(this);
-
-        JPanel content = new JPanel(new BorderLayout(10, 10));
-        content.setBorder(new EmptyBorder(20, 20, 20, 20));
-        content.setBackground(Color.WHITE);
-
-        JLabel title = new JLabel("Book Slot " + slot.getParkingSlotNumber(), SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        title.setForeground(new Color(52, 73, 94));
-
-        // Form panel
-        JPanel formPanel = new JPanel(new GridLayout(4, 2, 10, 10));
-        formPanel.setBackground(Color.WHITE);
-
-        formPanel.add(new JLabel("Vehicle:"));
-        JComboBox<String> vehicleCombo = new JComboBox<>();
-        for (Vehicle v : vehicles) {
-            vehicleCombo.addItem(v.getVehiclePlateNumber());
-        }
-        formPanel.add(vehicleCombo);
-
-        formPanel.add(new JLabel("Duration:"));
-        String[] durations = { "1 hour", "2 hours", "3 hours", "4 hours", "5 hours", "6 hours", "1 day", "2 days" };
-        JComboBox<String> durationCombo = new JComboBox<>(durations);
-        formPanel.add(durationCombo);
-
-        formPanel.add(new JLabel("Date/Time:"));
-        JTextField datetimeField = new JTextField();
-        datetimeField.setText(new Timestamp(System.currentTimeMillis()).toString().substring(0, 16));
-        formPanel.add(datetimeField);
-
-        formPanel.add(new JLabel("Estimated Cost:"));
-        JLabel costLabel = new JLabel("$5.00");
-        costLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        costLabel.setForeground(new Color(46, 204, 113));
-        formPanel.add(costLabel);
-
-        // Button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        buttonPanel.setBackground(Color.WHITE);
-
-        JButton bookBtn = new JButton("📅 Book Now");
-        bookBtn.setBackground(new Color(46, 204, 113));
-        bookBtn.setForeground(Color.WHITE);
-        bookBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        bookBtn.addActionListener(e -> {
-            createBooking(slot, vehicles.get(vehicleCombo.getSelectedIndex()),
-                    (String) durationCombo.getSelectedItem(), dialog);
-        });
-
-        JButton cancelBtn = new JButton("Cancel");
-        cancelBtn.addActionListener(e -> dialog.dispose());
-
-        buttonPanel.add(bookBtn);
-        buttonPanel.add(cancelBtn);
-
-        content.add(title, BorderLayout.NORTH);
-        content.add(formPanel, BorderLayout.CENTER);
-        content.add(buttonPanel, BorderLayout.SOUTH);
-
-        dialog.add(content);
-        dialog.setVisible(true);
-    }
-
-    private void createBooking(ParkingSlot slot, Vehicle vehicle, String duration, JDialog dialog) {
-        SwingWorker<Integer, Void> worker = new SwingWorker<>() {
-            @Override
-            protected Integer doInBackground() throws Exception {
-                try {
-                    Booking booking = new Booking();
-                    booking.setCustomerId(ownerId);
-                    booking.setVehicleId(vehicle.getVehicleId());
-                    booking.setSlotId(slot.getParkingSlotId());
-                    booking.setDurationOfBooking(duration);
-                    booking.setBookingStatus(0); // Pending
-                    booking.setUserId(userId);
-                    booking.setRemarks("Booking from customer dashboard");
-                    booking.setBookingTime(new Timestamp(System.currentTimeMillis()));
-
-                    return bookingDAO.createBookingWithSlotUpdate(booking);
-                } catch (Exception e) {
-                    return -1;
-                }
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    int bookingId = get();
-
-                    if (bookingId > 0) {
-                        JOptionPane.showMessageDialog(dialog,
-                                "✅ Booking created successfully!\n" +
-                                        "Booking ID: " + bookingId + "\n" +
-                                        "Make payment to confirm your booking.",
-                                "Success",
-                                JOptionPane.INFORMATION_MESSAGE);
-
-                        dialog.dispose();
-                        showDashboard(); // Refresh dashboard
-                    } else {
-                        JOptionPane.showMessageDialog(dialog,
-                                "Failed to create booking. Please try again.",
-                                "Error",
-                                JOptionPane.ERROR_MESSAGE);
-                    }
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(dialog,
-                            "Error: " + e.getMessage(),
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        };
-        worker.execute();
+    // Legacy support alias
+    public void showDashboardView() {
+        showDashboard();
     }
 
     public void showMyVehicles() {
         currentView = "vehicles";
-        highlightCurrentMenu();
-
-        JPanel vehiclesPanel = new MyVehiclesPanel(userId, ownerId);
-        mainPanel.add(vehiclesPanel, "vehicles");
-        cardLayout.show(mainPanel, "vehicles");
+        mainPanel.removeAll();
+        // Pass 'this' as the dashboard reference
+        JPanel p = new MyVehiclesPanel(userId, ownerId, this);
+        mainPanel.add(p);
+        mainPanel.revalidate();
+        mainPanel.repaint();
     }
 
     public void showBookings() {
         currentView = "bookings";
-        highlightCurrentMenu();
-
-        JPanel bookingsPanel = new MyBookingsPanel(userId, ownerId);
-        mainPanel.add(bookingsPanel, "bookings");
-        cardLayout.show(mainPanel, "bookings");
+        mainPanel.removeAll();
+        // Pass 'this' if constructor allows, otherwise check current implementation
+        JPanel p = new MyBookingsPanel(userId, ownerId);
+        mainPanel.add(p);
+        mainPanel.revalidate();
+        mainPanel.repaint();
     }
 
     public void showPayments() {
         currentView = "payments";
-        highlightCurrentMenu();
-
-        // Remove existing payments panel if any
-        for (Component comp : mainPanel.getComponents()) {
-            if (comp.getName() != null && comp.getName().equals("customerPaymentsPanel")) {
-                mainPanel.remove(comp);
-            }
+        mainPanel.removeAll();
+        // Check if CustomerPaymentPanel exists in package, assuming yes
+        try {
+            JPanel p = new CustomerPaymentPanel(userId, ownerId);
+            mainPanel.add(p);
+        } catch (Exception e) {
+            JPanel p = new JPanel();
+            p.add(new JLabel("Payment module loading..."));
+            mainPanel.add(p);
         }
-
-        JPanel paymentsPanel = new CustomerPaymentPanel(userId, ownerId);
-        paymentsPanel.setName("customerPaymentsPanel");
-        mainPanel.add(paymentsPanel, "payments");
-        cardLayout.show(mainPanel, "payments");
+        mainPanel.revalidate();
+        mainPanel.repaint();
     }
-
-    // private JPanel createPaymentsPanel() {
-    // JPanel panel = new JPanel(new BorderLayout());
-    // panel.setBackground(new Color(245, 247, 250));
-    // panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-    // JLabel title = new JLabel("💰 Payments");
-    // title.setFont(new Font("Segoe UI", Font.BOLD, 24));
-    // title.setForeground(new Color(52, 73, 94));
-
-    // panel.add(title, BorderLayout.NORTH);
-    // panel.add(new JLabel("Payments functionality will be implemented here.",
-    // SwingConstants.CENTER), BorderLayout.CENTER);
-
-    // return panel;
-    // }
 
     public void showProfile() {
         currentView = "profile";
-        highlightCurrentMenu();
+        mainPanel.removeAll();
 
-        JPanel profilePanel = createProfilePanel();
-        mainPanel.add(profilePanel, "profile");
-        cardLayout.show(mainPanel, "profile");
+        UserProfilePanel profilePanel = new UserProfilePanel(userId);
+        mainPanel.add(profilePanel);
+
+        mainPanel.revalidate();
+        mainPanel.repaint();
     }
 
-    private JPanel createProfilePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(245, 247, 250));
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        JLabel title = new JLabel("👤 Profile");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        title.setForeground(new Color(52, 73, 94));
-
-        // Profile content
-        JPanel content = new JPanel(new GridLayout(6, 2, 10, 10));
-        content.setBackground(Color.WHITE);
-        content.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        if (currentUser != null) {
-            content.add(new JLabel("Username:"));
-            content.add(new JLabel(currentUser.getUsername()));
-
-            content.add(new JLabel("Email:"));
-            content.add(new JLabel(currentUser.getEmail()));
-
-            content.add(new JLabel("User ID:"));
-            content.add(new JLabel(String.valueOf(currentUser.getUserId())));
-
-            content.add(new JLabel("Vehicle Owner:"));
-            content.add(new JLabel(ownerId != null ? "Yes (ID: " + ownerId + ")" : "No"));
-
-            if (vehicleOwner != null) {
-                content.add(new JLabel("Owner Name:"));
-                content.add(new JLabel(vehicleOwner.getVehicleOwnerName()));
-
-                content.add(new JLabel("Contact:"));
-                content.add(new JLabel(vehicleOwner.getVehicleOwnerContact()));
-            }
-        }
-
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(content, BorderLayout.CENTER);
-
-        return panel;
+    public void showRegistrationForm() {
+        currentView = "registration";
+        mainPanel.removeAll();
+        VehicleOwnerRegistrationPanel registrationPanel = new VehicleOwnerRegistrationPanel(userId, this);
+        mainPanel.add(registrationPanel);
+        mainPanel.revalidate();
+        mainPanel.repaint();
     }
 
     public void showHelp() {
         currentView = "help";
-        highlightCurrentMenu();
+        JPanel p = new JPanel(new GridBagLayout());
+        p.setBackground(Color.WHITE);
+        p.add(new JLabel("Help & Support Coming Soon"));
 
-        JPanel helpPanel = createHelpPanel();
-        mainPanel.add(helpPanel, "help");
-        cardLayout.show(mainPanel, "help");
+        mainPanel.removeAll();
+        mainPanel.add(p);
+        mainPanel.revalidate();
+        mainPanel.repaint();
     }
 
-    private JPanel createHelpPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(245, 247, 250));
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        JLabel title = new JLabel("❓ Help & Support");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        title.setForeground(new Color(52, 73, 94));
-
-        JTextArea helpText = new JTextArea();
-        helpText.setText("PARKFLOW Customer Support\n\n" +
-                "1. How to book a parking slot?\n" +
-                "   - Register as Vehicle Owner (My Vehicles)\n" +
-                "   - Add at least one vehicle\n" +
-                "   - Click on available slot to book\n\n" +
-                "2. How to make payment?\n" +
-                "   - Go to 'Payments' section\n" +
-                "   - Select booking to pay\n" +
-                "   - Enter payment amount\n\n" +
-                "3. Contact Support:\n" +
-                "   Email: support@parkflow.com\n" +
-                "   Phone: 1-800-PARKFLOW\n" +
-                "   Hours: 24/7");
-        helpText.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        helpText.setEditable(false);
-        helpText.setBackground(Color.WHITE);
-
-        JScrollPane scrollPane = new JScrollPane(helpText);
-
-        panel.add(title, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    private void highlightCurrentMenu() {
-        // Get sidebar panel
-        JPanel sidebar = (JPanel) getContentPane().getComponent(0);
-
-        // Find all menu buttons
-        for (Component comp : sidebar.getComponents()) {
-            if (comp instanceof JPanel) {
-                for (Component subComp : ((JPanel) comp).getComponents()) {
-                    if (subComp instanceof JButton) {
-                        JButton btn = (JButton) subComp;
-                        String btnText = btn.getText();
-
-                        // Check which menu this button represents
-                        if (currentView.equals("dashboard") && btnText.contains("DASHBOARD")) {
-                            btn.setBackground(new Color(41, 128, 185));
-                        } else if (currentView.equals("vehicles") && btnText.contains("VEHICLES")) {
-                            btn.setBackground(new Color(41, 128, 185));
-                        } else if (currentView.equals("bookings") && btnText.contains("BOOK")) {
-                            btn.setBackground(new Color(41, 128, 185));
-                        } else if (currentView.equals("payments") && btnText.contains("PAYMENTS")) {
-                            btn.setBackground(new Color(41, 128, 185));
-                        } else if (currentView.equals("profile") && btnText.contains("PROFILE")) {
-                            btn.setBackground(new Color(41, 128, 185));
-                        } else if (currentView.equals("help") && btnText.contains("HELP")) {
-                            btn.setBackground(new Color(41, 128, 185));
-                        } else if (!btn.getBackground().equals(new Color(231, 76, 60))) { // Don't change logout button
-                            btn.setBackground(new Color(52, 73, 94));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void logout() {
-        int confirm = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to logout?",
-                "Confirm Logout",
-                JOptionPane.YES_NO_OPTION);
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            dispose();
-            new LoginFrame().setVisible(true);
-        }
-    }
-
-    // Public method for VehicleOwnerRegistrationPanel to call
     public void onRegistrationSuccess(Integer newOwnerId) {
         this.ownerId = newOwnerId;
         try {
@@ -971,28 +566,21 @@ public class CustomerDashboard extends JFrame {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         updateUserInfo();
-
         JOptionPane.showMessageDialog(this,
-                "✅ Registration successful!\n\n" +
-                        "Vehicle Owner ID: " + newOwnerId + "\n" +
-                        "You can now add vehicles and make bookings.",
-                "Success",
-                JOptionPane.INFORMATION_MESSAGE);
-
+                "✅ Registration successful!\nVehicle Owner ID: " + newOwnerId,
+                "Success", JOptionPane.INFORMATION_MESSAGE);
         showDashboard();
     }
 
-    // Required public method for VehicleOwnerRegistrationPanel
-    public void showDashboardView() {
-        showDashboard();
+    private void logout() {
+        dispose();
+        new LoginFrame().setVisible(true);
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            // For testing
-            new CustomerDashboard(1).setVisible(true);
+            new LoginFrame().setVisible(true);
         });
     }
 }

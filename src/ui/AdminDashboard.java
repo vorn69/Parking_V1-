@@ -5,6 +5,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import javax.swing.*;
+import javax.swing.border.*;
 import javax.swing.table.*;
 import models.Booking;
 
@@ -31,7 +32,7 @@ public class AdminDashboard extends JFrame {
 
     public AdminDashboard() {
         setTitle("Parking Management System - Admin");
-        
+
         // Set to full screen
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -67,7 +68,7 @@ public class AdminDashboard extends JFrame {
         JPanel panel = new JPanel();
         panel.setBackground(SIDEBAR);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        
+
         // Make sidebar width proportional to screen
         int sidebarWidth = (int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() * 0.18);
         panel.setPreferredSize(new Dimension(sidebarWidth, getHeight()));
@@ -80,34 +81,39 @@ public class AdminDashboard extends JFrame {
         panel.add(title);
 
         panel.add(Box.createVerticalStrut(10));
-        panel.add(menuBtn("Dashboard", "DASHBOARD", SIDEBAR_BTN_CLR));
-        panel.add(menuBtn("Bookings", "BOOKINGS", SIDEBAR_BTN_CLR));
-        panel.add(menuBtn("Payments", "PAYMENTS", SIDEBAR_BTN_CLR));
-        panel.add(menuBtn("Owners", "OWNERS", SIDEBAR_BTN_CLR));
-        panel.add(menuBtn("Parking Slots", "SLOTS", SIDEBAR_BTN_CLR));
-        panel.add(menuBtn("User Management", "USERS", SIDEBAR_BTN_CLR));
-        // In AdminDashboard createSidebar() method, add:
-        
+        panel.add(menuBtn("Dashboard", "DASHBOARD", SIDEBAR_BTN_CLR, "📊"));
+        panel.add(menuBtn("Bookings", "BOOKINGS", SIDEBAR_BTN_CLR, "📋"));
+        panel.add(menuBtn("Payments", "PAYMENTS", SIDEBAR_BTN_CLR, "💰"));
+        panel.add(menuBtn("Owners", "OWNERS", SIDEBAR_BTN_CLR, "👤"));
+        panel.add(menuBtn("Parking Slots", "SLOTS", SIDEBAR_BTN_CLR, "🅿️"));
+        panel.add(menuBtn("User Management", "USERS", SIDEBAR_BTN_CLR, "👥"));
+
         // Add some vertical space before logout button
         panel.add(Box.createVerticalGlue());
         panel.add(Box.createVerticalStrut(20));
-        panel.add(menuBtn("Logout", null, LOGOUT_CLR));
+        panel.add(menuBtn("Logout", null, LOGOUT_CLR, "🚪"));
         panel.add(Box.createVerticalStrut(20));
 
         return panel;
     }
 
-    private JButton menuBtn(String text, String page, Color color) {
+    private JButton menuBtn(String text, String page, Color color, String icon) {
         JButton btn = new JButton(text);
-        btn.setMaximumSize(new Dimension(200, 50));
+        btn.setMaximumSize(new Dimension(220, 45));
         btn.setBackground(color);
         btn.setForeground(Color.WHITE);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btn.setIcon(new TextIcon(icon, new Font("Segoe UI Emoji", Font.PLAIN, 16), Color.WHITE));
+        btn.setIconTextGap(15);
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
         btn.setFocusPainted(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        // Simpler border
         btn.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(color.darker(), 1),
-                BorderFactory.createEmptyBorder(12, 25, 12, 25)));
+                new LineBorder(new Color(255, 255, 255, 50), 1),
+                new EmptyBorder(10, 20, 10, 20)));
+
         btn.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         btn.addActionListener(e -> {
@@ -128,7 +134,7 @@ public class AdminDashboard extends JFrame {
     private JPanel createHeader() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(HEADER);
-        
+
         // Make header height proportional to screen
         int headerHeight = (int) (Toolkit.getDefaultToolkit().getScreenSize().getHeight() * 0.08);
         panel.setPreferredSize(new Dimension(getWidth(), headerHeight));
@@ -142,32 +148,36 @@ public class AdminDashboard extends JFrame {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 0));
         rightPanel.setBackground(HEADER);
         rightPanel.setOpaque(false);
-        
+
         JLabel welcomeLabel = new JLabel("Welcome, Admin");
         welcomeLabel.setForeground(Color.WHITE);
         welcomeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        
+
         JLabel timeLabel = new JLabel();
         timeLabel.setForeground(Color.WHITE);
         timeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        
+
         // Update time every second - Use javax.swing.Timer specifically
         javax.swing.Timer timer = new javax.swing.Timer(1000, e -> {
             timeLabel.setText(new java.text.SimpleDateFormat("hh:mm:ss a").format(new Date()));
         });
         timer.start();
-        
+
         rightPanel.add(welcomeLabel);
         rightPanel.add(new JLabel("|"));
         rightPanel.add(timeLabel);
 
         panel.add(title, BorderLayout.WEST);
         panel.add(rightPanel, BorderLayout.EAST);
-        
+
         return panel;
     }
 
     // ================= DASHBOARD =================
+    private JPanel createDashboardPanel() {
+        return createDashboardPage(); // Rename or fix call
+    }
+
     private JPanel createDashboardPage() {
         JPanel panel = new JPanel(new BorderLayout(20, 20));
         panel.setBackground(BG);
@@ -190,24 +200,24 @@ public class AdminDashboard extends JFrame {
         // Table Panel
         JPanel tablePanel = new JPanel(new BorderLayout());
         tablePanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.LIGHT_GRAY), 
+                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
                 "Recent Bookings",
                 javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION,
                 javax.swing.border.TitledBorder.DEFAULT_POSITION,
                 new Font("Segoe UI", Font.BOLD, 14),
                 new Color(52, 73, 94)));
         tablePanel.setBackground(Color.WHITE);
-        
+
         table = new JTable();
         table.setRowHeight(35);
         table.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        
+
         // Custom table header
         javax.swing.table.JTableHeader header = table.getTableHeader();
         header.setBackground(new Color(240, 240, 240));
         header.setForeground(new Color(52, 73, 94));
         header.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        
+
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         tablePanel.add(scroll, BorderLayout.CENTER);
@@ -226,22 +236,21 @@ public class AdminDashboard extends JFrame {
         label.setForeground(Color.WHITE);
         label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         label.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(color.darker(), 1),
-            BorderFactory.createEmptyBorder(25, 10, 25, 10)
-        ));
+                BorderFactory.createLineBorder(color.darker(), 1),
+                BorderFactory.createEmptyBorder(25, 10, 25, 10)));
         label.setHorizontalAlignment(SwingConstants.CENTER);
-        
+
         // Set initial text
         updateCardText(label, title, value, icon);
-        
+
         return label;
     }
-    
+
     private void updateCardText(JLabel card, String title, String value, String icon) {
-        card.setText("<html><div style='text-align:center;'>" + 
-                    "<span style='font-size:24px;'>" + icon + "</span><br/>" +
-                    "<span style='font-size:24px; font-weight:bold;'>" + value + "</span><br/>" + 
-                    "<span style='font-size:14px;'>" + title + "</span></div></html>");
+        card.setText("<html><div style='text-align:center;'>" +
+                "<span style='font-size:24px;'>" + icon + "</span><br/>" +
+                "<span style='font-size:24px; font-weight:bold;'>" + value + "</span><br/>" +
+                "<span style='font-size:14px;'>" + title + "</span></div></html>");
     }
 
     // ================= DATA =================
@@ -262,13 +271,13 @@ public class AdminDashboard extends JFrame {
             protected void done() {
                 try {
                     Map<String, Integer> stats = get();
-                    
+
                     // Update cards with simple method calls
                     updateCardText(lblBookings, "Bookings", String.valueOf(stats.get("Bookings")), "📋");
                     updateCardText(lblVehicles, "Vehicles", String.valueOf(stats.get("Vehicles")), "🚗");
                     updateCardText(lblOwners, "Owners", String.valueOf(stats.get("Owners")), "👤");
                     updateCardText(lblSlots, "Slots", String.valueOf(stats.get("Slots")), "🅿️");
-                    
+
                 } catch (Exception e) {
                     e.printStackTrace();
                     JOptionPane.showMessageDialog(AdminDashboard.this, "Error loading stats: " + e.getMessage());
@@ -305,14 +314,14 @@ public class AdminDashboard extends JFrame {
                         });
                     }
                     table.setModel(model);
-                    
+
                     // Adjust column widths
                     table.getColumnModel().getColumn(0).setPreferredWidth(80);
                     table.getColumnModel().getColumn(1).setPreferredWidth(100);
                     table.getColumnModel().getColumn(2).setPreferredWidth(80);
                     table.getColumnModel().getColumn(3).setPreferredWidth(100);
                     table.getColumnModel().getColumn(4).setPreferredWidth(100);
-                    
+
                 } catch (Exception e) {
                     e.printStackTrace();
                     JOptionPane.showMessageDialog(AdminDashboard.this, "Error loading bookings: " + e.getMessage());
@@ -334,6 +343,39 @@ public class AdminDashboard extends JFrame {
         }
     }
 
+    // Helper Class for Text Icon
+    private static class TextIcon implements Icon {
+        private String text;
+        private Font font;
+        private Color color;
+
+        public TextIcon(String text, Font font, Color color) {
+            this.text = text;
+            this.font = font;
+            this.color = color;
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2d.setFont(font);
+            g2d.setColor(color);
+            g2d.drawString(text, x, y + getIconHeight() - 5);
+            g2d.dispose();
+        }
+
+        @Override
+        public int getIconWidth() {
+            return 30;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return 30;
+        }
+    }
+
     public static void main(String[] args) {
         // Set look and feel
         try {
@@ -341,7 +383,7 @@ public class AdminDashboard extends JFrame {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
         SwingUtilities.invokeLater(() -> {
             AdminDashboard dashboard = new AdminDashboard();
             dashboard.setVisible(true);

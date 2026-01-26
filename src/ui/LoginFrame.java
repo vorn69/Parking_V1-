@@ -397,7 +397,8 @@ public class LoginFrame extends JFrame {
     }
 
     private void openSignup() {
-        JOptionPane.showMessageDialog(this, "Signup coming soon!");
+        new UserRegistrationFrame().setVisible(true);
+        dispose();
     }
 
     public static void main(String[] args) {

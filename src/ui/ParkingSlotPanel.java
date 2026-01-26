@@ -14,6 +14,8 @@ import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
 import models.ParkingSlot;
 
 public class ParkingSlotPanel extends JPanel {
@@ -61,21 +63,20 @@ public class ParkingSlotPanel extends JPanel {
         JPanel header = new JPanel(new BorderLayout(20, 0));
         header.setBackground(CARD_BG);
         header.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 2),
-            new EmptyBorder(20, 25, 20, 25)
-        ));
+                new LineBorder(BORDER_COLOR, 2),
+                new EmptyBorder(20, 25, 20, 25)));
 
         // Title with icon
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         titlePanel.setBackground(CARD_BG);
-        
-        JLabel icon = new JLabel("🅿️");
-        icon.setFont(new Font("Segoe UI", Font.PLAIN, 28));
-        
+
+        JLabel icon = new JLabel();
+        icon.setIcon(new TextIcon("🅿️", new Font("Segoe UI Emoji", Font.PLAIN, 28), ADD_BUTTON_COLOR));
+
         JLabel title = new JLabel("Parking Slots Management");
         title.setFont(new Font("Segoe UI", Font.BOLD, 24));
         title.setForeground(TEXT_PRIMARY);
-        
+
         titlePanel.add(icon);
         titlePanel.add(title);
         header.add(titlePanel, BorderLayout.WEST);
@@ -83,70 +84,76 @@ public class ParkingSlotPanel extends JPanel {
         // Action buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         buttonPanel.setBackground(CARD_BG);
-        
-        buttonPanel.add(createStyledButton("➕ Add Slot", ADD_BUTTON_COLOR));
+
+        buttonPanel.add(createStyledButton("Add Slot", ADD_BUTTON_COLOR, "➕"));
         buttonPanel.add(createRefreshButton());
-        
+
         header.add(buttonPanel, BorderLayout.EAST);
-        
+
         return header;
     }
 
-    private JButton createStyledButton(String text, Color bgColor) {
+    private JButton createStyledButton(String text, Color bgColor, String iconSymbol) {
         JButton button = new JButton(text);
         button.setBackground(bgColor);
         button.setForeground(Color.WHITE);
         button.setFont(new Font("Segoe UI", Font.BOLD, 14));
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(bgColor.darker(), 1),
-            new EmptyBorder(12, 25, 12, 25)
-        ));
+                new LineBorder(bgColor.darker(), 1),
+                new EmptyBorder(12, 25, 12, 25)));
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
+
+        button.setIcon(new TextIcon(iconSymbol, new Font("Segoe UI Emoji", Font.PLAIN, 14), Color.WHITE));
+        button.setIconTextGap(10);
+
         // Hover effect
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
                 button.setBackground(bgColor.brighter());
             }
-            
+
             @Override
             public void mouseExited(MouseEvent e) {
                 button.setBackground(bgColor);
             }
         });
-        
+
         // Action
         if (text.contains("Add Slot")) {
             button.addActionListener(e -> showAddSlotDialog());
         }
-        
+
         return button;
     }
 
     private JButton createRefreshButton() {
-        JButton button = new JButton("🔄 Refresh");
+        JButton button = new JButton("Refresh");
         button.setBackground(new Color(241, 245, 249));
         button.setForeground(TEXT_PRIMARY);
         button.setFont(new Font("Segoe UI", Font.BOLD, 14));
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 1),
-            new EmptyBorder(12, 25, 12, 25)
-        ));
+                new LineBorder(BORDER_COLOR, 1),
+                new EmptyBorder(12, 25, 12, 25)));
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
+
+        button.setIcon(new TextIcon("🔄", new Font("Segoe UI Emoji", Font.PLAIN, 14), TEXT_PRIMARY));
+        button.setIconTextGap(10);
+
         button.addActionListener(e -> {
-            button.setText("🔄 Refreshing...");
-            Timer timer = new Timer(500, evt -> {
-                loadSlots();
-                button.setText("🔄 Refresh");
-            });
-            timer.setRepeats(false);
-            timer.start();
+            // button.setText("Refreshing...");
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    loadSlots();
+                    return null;
+                }
+            };
+            worker.execute();
         });
-        
+
         return button;
     }
 
@@ -157,15 +164,15 @@ public class ParkingSlotPanel extends JPanel {
         statsPanel.setBackground(BG_COLOR);
         statsPanel.setBorder(new EmptyBorder(0, 0, 0, 20));
         statsPanel.setPreferredSize(new Dimension(280, 0));
-        
+
         updateStatsPanel();
-        
+
         return statsPanel;
     }
 
     private void updateStatsPanel() {
         statsPanel.removeAll();
-        
+
         int total = slots != null ? slots.size() : 0;
         long available = slots != null ? slots.stream()
                 .filter(s -> s.getParkingSlotStatus() == ParkingSlot.STATUS_AVAILABLE).count() : 0;
@@ -173,66 +180,64 @@ public class ParkingSlotPanel extends JPanel {
                 .filter(s -> s.getParkingSlotStatus() == ParkingSlot.STATUS_RESERVED).count() : 0;
         long occupied = slots != null ? slots.stream()
                 .filter(s -> s.getParkingSlotStatus() == ParkingSlot.STATUS_OCCUPIED).count() : 0;
-        
-        statsPanel.add(createStatCard("Total Slots", "🅿️", String.valueOf(total), 
-            new Color(59, 130, 246), "All parking slots"));
+
+        statsPanel.add(createStatCard("Total Slots", "🅿️", String.valueOf(total),
+                new Color(59, 130, 246), "All parking slots"));
         statsPanel.add(Box.createVerticalStrut(15));
-        statsPanel.add(createStatCard("Available", "✅", String.valueOf(available), 
-            AVAILABLE_COLOR, "Ready for booking"));
+        statsPanel.add(createStatCard("Available", "✅", String.valueOf(available),
+                AVAILABLE_COLOR, "Ready for booking"));
         statsPanel.add(Box.createVerticalStrut(15));
-        statsPanel.add(createStatCard("Reserved", "⏳", String.valueOf(reserved), 
-            RESERVED_COLOR, "Booked but not occupied"));
+        statsPanel.add(createStatCard("Reserved", "⏳", String.valueOf(reserved),
+                RESERVED_COLOR, "Booked but not occupied"));
         statsPanel.add(Box.createVerticalStrut(15));
-        statsPanel.add(createStatCard("Occupied", "🚗", String.valueOf(occupied), 
-            OCCUPIED_COLOR, "Currently in use"));
-        
+        statsPanel.add(createStatCard("Occupied", "🚗", String.valueOf(occupied),
+                OCCUPIED_COLOR, "Currently in use"));
+
         // Add occupancy chart
         statsPanel.add(Box.createVerticalStrut(25));
         statsPanel.add(createOccupancyChart(available, reserved, occupied, total));
-        
+
         statsPanel.revalidate();
         statsPanel.repaint();
     }
 
-    private JPanel createStatCard(String title, String icon, String value, Color color, String description) {
+    private JPanel createStatCard(String title, String iconSym, String value, Color color, String description) {
         JPanel card = new JPanel(new BorderLayout(10, 5));
         card.setBackground(CARD_BG);
         card.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 1),
-            new EmptyBorder(20, 20, 20, 20)
-        ));
+                new LineBorder(BORDER_COLOR, 1),
+                new EmptyBorder(20, 20, 20, 20)));
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
+
         // Title and icon
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBackground(CARD_BG);
-        
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 24));
-        iconLabel.setForeground(color);
-        
+
+        JLabel iconLabel = new JLabel();
+        iconLabel.setIcon(new TextIcon(iconSym, new Font("Segoe UI Emoji", Font.PLAIN, 24), color));
+
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         titleLabel.setForeground(TEXT_PRIMARY);
-        
+
         topPanel.add(iconLabel, BorderLayout.WEST);
         topPanel.add(titleLabel, BorderLayout.EAST);
-        
+
         // Value
         JLabel valueLabel = new JLabel(value);
         valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 36));
         valueLabel.setForeground(color);
         valueLabel.setBorder(new EmptyBorder(10, 0, 5, 0));
-        
+
         // Description
         JLabel descLabel = new JLabel(description);
         descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         descLabel.setForeground(TEXT_SECONDARY);
-        
+
         card.add(topPanel, BorderLayout.NORTH);
         card.add(valueLabel, BorderLayout.CENTER);
         card.add(descLabel, BorderLayout.SOUTH);
-        
+
         return card;
     }
 
@@ -240,25 +245,24 @@ public class ParkingSlotPanel extends JPanel {
         JPanel chartCard = new JPanel(new BorderLayout());
         chartCard.setBackground(CARD_BG);
         chartCard.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 1),
-            new EmptyBorder(20, 20, 20, 20)
-        ));
-        
+                new LineBorder(BORDER_COLOR, 1),
+                new EmptyBorder(20, 20, 20, 20)));
+
         JLabel title = new JLabel("Occupancy Chart");
         title.setFont(new Font("Segoe UI", Font.BOLD, 16));
         title.setForeground(TEXT_PRIMARY);
         title.setBorder(new EmptyBorder(0, 0, 15, 0));
-        
+
         // Chart visualization
         JPanel chartPanel = new JPanel(new GridLayout(1, total > 0 ? total : 1, 3, 0));
         chartPanel.setBackground(CARD_BG);
         chartPanel.setPreferredSize(new Dimension(0, 80));
-        
+
         // Add colored blocks for each slot
         for (int i = 0; i < total; i++) {
             JPanel block = new JPanel();
             block.setBorder(new LineBorder(CARD_BG, 1));
-            
+
             if (i < occupied) {
                 block.setBackground(OCCUPIED_COLOR);
                 block.setToolTipText("Occupied");
@@ -269,42 +273,42 @@ public class ParkingSlotPanel extends JPanel {
                 block.setBackground(AVAILABLE_COLOR);
                 block.setToolTipText("Available");
             }
-            
+
             chartPanel.add(block);
         }
-        
+
         // Legend
         JPanel legendPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
         legendPanel.setBackground(CARD_BG);
         legendPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
-        
+
         legendPanel.add(createLegendItem("Available", AVAILABLE_COLOR));
         legendPanel.add(createLegendItem("Reserved", RESERVED_COLOR));
         legendPanel.add(createLegendItem("Occupied", OCCUPIED_COLOR));
-        
+
         chartCard.add(title, BorderLayout.NORTH);
         chartCard.add(chartPanel, BorderLayout.CENTER);
         chartCard.add(legendPanel, BorderLayout.SOUTH);
-        
+
         return chartCard;
     }
 
     private JPanel createLegendItem(String text, Color color) {
         JPanel legendItem = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         legendItem.setBackground(CARD_BG);
-        
+
         JPanel colorBox = new JPanel();
         colorBox.setBackground(color);
         colorBox.setPreferredSize(new Dimension(12, 12));
         colorBox.setBorder(new LineBorder(BORDER_COLOR, 1));
-        
+
         JLabel label = new JLabel(text);
         label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         label.setForeground(TEXT_SECONDARY);
-        
+
         legendItem.add(colorBox);
         legendItem.add(label);
-        
+
         return legendItem;
     }
 
@@ -312,53 +316,51 @@ public class ParkingSlotPanel extends JPanel {
     private JPanel createTablePanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG_COLOR);
-        
+
         // Table header
         JPanel tableHeader = new JPanel(new BorderLayout());
         tableHeader.setBackground(CARD_BG);
         tableHeader.setBorder(new EmptyBorder(20, 25, 20, 25));
-        
+
         JLabel tableTitle = new JLabel("Slot Details");
         tableTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
         tableTitle.setForeground(TEXT_PRIMARY);
-        
+
         // Search panel
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         searchPanel.setBackground(CARD_BG);
-        
+
         JTextField searchField = new JTextField(20);
         searchField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         searchField.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 1),
-            new EmptyBorder(8, 15, 8, 15)
-        ));
+                new LineBorder(BORDER_COLOR, 1),
+                new EmptyBorder(8, 15, 8, 15)));
         searchField.putClientProperty("JTextField.placeholderText", "Search slots...");
-        
-        JButton searchBtn = new JButton("🔍");
+
+        JButton searchBtn = new JButton();
+        searchBtn.setIcon(new TextIcon("🔍", new Font("Segoe UI Emoji", Font.PLAIN, 14), TEXT_PRIMARY));
         searchBtn.setBackground(new Color(241, 245, 249));
         searchBtn.setForeground(TEXT_PRIMARY);
         searchBtn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         searchBtn.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 1),
-            new EmptyBorder(8, 15, 8, 15)
-        ));
+                new LineBorder(BORDER_COLOR, 1),
+                new EmptyBorder(8, 15, 8, 15)));
         searchBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
+
         searchPanel.add(searchField);
         searchPanel.add(searchBtn);
-        
+
         tableHeader.add(tableTitle, BorderLayout.WEST);
         tableHeader.add(searchPanel, BorderLayout.EAST);
-        
+
         // Table
         tableModel = new DefaultTableModel(
-            new String[]{"Slot ID", "Slot Number", "Status", "Actions"}, 0
-        ) {
+                new String[] { "Slot ID", "Slot Number", "Status", "Actions" }, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return column == 3; // Only actions column is editable
             }
-            
+
             @Override
             public Class<?> getColumnClass(int column) {
                 return column == 3 ? JPanel.class : Object.class;
@@ -371,7 +373,7 @@ public class ParkingSlotPanel extends JPanel {
         table.setGridColor(new Color(240, 240, 240));
         table.setShowVerticalLines(false);
         table.setIntercellSpacing(new Dimension(0, 1));
-        
+
         // Custom header
         JTableHeader header = table.getTableHeader();
         header.setBackground(new Color(248, 249, 250));
@@ -379,95 +381,161 @@ public class ParkingSlotPanel extends JPanel {
         header.setFont(new Font("Segoe UI", Font.BOLD, 14));
         header.setBorder(new LineBorder(BORDER_COLOR, 1));
         header.setReorderingAllowed(false);
-        
+
         // Custom cell renderer
         table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
                     boolean isSelected, boolean hasFocus, int row, int column) {
-                Component c = super.getTableCellRendererComponent(table, value, 
+
+                // Special handling for action buttons column
+                if (column == 3 && value instanceof Component) {
+                    return (Component) value;
+                }
+
+                Component c = super.getTableCellRendererComponent(table, value,
                         isSelected, hasFocus, row, column);
-                
+
                 if (c instanceof JLabel) {
                     JLabel label = (JLabel) c;
                     label.setBorder(new EmptyBorder(0, 20, 0, 20));
-                    
-                    if (column == 2) { // Status column
+                    label.setIcon(null); // Clear icon to prevent bleeding
+
+                    if (column == 2 && value != null) { // Status column
                         String status = value.toString();
                         switch (status) {
                             case "AVAILABLE":
                                 label.setForeground(AVAILABLE_COLOR);
-                                label.setText("<html><span style='background:#DCFCE7; padding:8px 16px; border-radius:20px; font-weight:bold;'>✅ " + status + "</span></html>");
+                                label.setIcon(
+                                        new TextIcon("✅", new Font("Segoe UI Emoji", Font.PLAIN, 14), AVAILABLE_COLOR));
+                                label.setText(
+                                        "<html><span style='background:#DCFCE7; padding:4px 8px; border-radius:20px;'>AVAILABLE</span></html>");
                                 break;
                             case "RESERVED":
                                 label.setForeground(RESERVED_COLOR);
-                                label.setText("<html><span style='background:#FEF9C3; padding:8px 16px; border-radius:20px; font-weight:bold;'>⏳ " + status + "</span></html>");
+                                label.setIcon(
+                                        new TextIcon("⏳", new Font("Segoe UI Emoji", Font.PLAIN, 14), RESERVED_COLOR));
+                                label.setText(
+                                        "<html><span style='background:#FEF9C3; padding:4px 8px; border-radius:20px;'>RESERVED</span></html>");
                                 break;
                             case "OCCUPIED":
                                 label.setForeground(OCCUPIED_COLOR);
-                                label.setText("<html><span style='background:#FEE2E2; padding:8px 16px; border-radius:20px; font-weight:bold;'>🚗 " + status + "</span></html>");
+                                label.setIcon(
+                                        new TextIcon("🚗", new Font("Segoe UI Emoji", Font.PLAIN, 14), OCCUPIED_COLOR));
+                                label.setText(
+                                        "<html><span style='background:#FEE2E2; padding:4px 8px; border-radius:20px;'>OCCUPIED</span></html>");
                                 break;
                         }
-                    } else if (column == 3) {
-                        return (Component) value; // Return the action buttons panel
                     } else {
                         label.setForeground(TEXT_PRIMARY);
                     }
-                    
+
                     if (isSelected) {
                         label.setBackground(HOVER_COLOR);
                     } else {
                         label.setBackground(row % 2 == 0 ? Color.WHITE : new Color(250, 250, 250));
                     }
                 }
-                
+
                 return c;
             }
         });
-        
+
+        // Add proper cell editor for action buttons
+        table.getColumnModel().getColumn(3).setCellRenderer(new ActionCellRenderer());
+        table.getColumnModel().getColumn(3).setCellEditor(new ActionCellEditor());
+
         // Set column widths
         table.getColumnModel().getColumn(0).setPreferredWidth(100);
         table.getColumnModel().getColumn(1).setPreferredWidth(150);
         table.getColumnModel().getColumn(2).setPreferredWidth(200);
         table.getColumnModel().getColumn(3).setPreferredWidth(250);
-        
+
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(Color.WHITE);
-        
+
         panel.add(tableHeader, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
-        
+
         return panel;
     }
 
     private JPanel createActionButtons(ParkingSlot slot) {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        buttonPanel.setBackground(Color.WHITE);
-        
-        JButton editBtn = new JButton("✏️ Edit");
-        editBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        buttonPanel.setOpaque(false); // Make it transparent to see row background
+
+        JButton editBtn = new JButton("Edit");
+        editBtn.setIcon(new TextIcon("✏️", new Font("Segoe UI Emoji", Font.PLAIN, 12), Color.WHITE));
+        editBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
         editBtn.setBackground(new Color(59, 130, 246));
         editBtn.setForeground(Color.WHITE);
         editBtn.setFocusPainted(false);
-        editBtn.setBorder(new EmptyBorder(6, 12, 6, 12));
+        editBtn.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(59, 130, 246).darker(), 1),
+                new EmptyBorder(6, 15, 6, 15)));
         editBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
-        JButton deleteBtn = new JButton("🗑️ Delete");
-        deleteBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+
+        JButton deleteBtn = new JButton("Delete");
+        deleteBtn.setIcon(new TextIcon("🗑️", new Font("Segoe UI Emoji", Font.PLAIN, 12), Color.WHITE));
+        deleteBtn.setFont(new Font("Segoe UI", Font.BOLD, 12));
         deleteBtn.setBackground(new Color(239, 68, 68));
         deleteBtn.setForeground(Color.WHITE);
         deleteBtn.setFocusPainted(false);
-        deleteBtn.setBorder(new EmptyBorder(6, 12, 6, 12));
+        deleteBtn.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(239, 68, 68).darker(), 1),
+                new EmptyBorder(6, 15, 6, 15)));
         deleteBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        
-        editBtn.addActionListener(e -> showEditDialog(slot));
-        deleteBtn.addActionListener(e -> showDeleteDialog(slot));
-        
+
+        editBtn.addActionListener(e -> {
+            if (table.isEditing())
+                table.getCellEditor().stopCellEditing();
+            showEditDialog(slot);
+        });
+        deleteBtn.addActionListener(e -> {
+            if (table.isEditing())
+                table.getCellEditor().stopCellEditing();
+            showDeleteDialog(slot);
+        });
+
         buttonPanel.add(editBtn);
         buttonPanel.add(deleteBtn);
-        
+
         return buttonPanel;
+    }
+
+    // ================= INNER CLASSES =================
+    class ActionCellRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            if (value instanceof JPanel) {
+                JPanel jp = (JPanel) value;
+                if (isSelected) {
+                    jp.setBackground(HOVER_COLOR);
+                } else {
+                    jp.setBackground(row % 2 == 0 ? Color.WHITE : new Color(250, 250, 250));
+                }
+                return jp;
+            }
+            return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        }
+    }
+
+    class ActionCellEditor extends AbstractCellEditor implements TableCellEditor {
+        private JPanel panel;
+
+        @Override
+        public Object getCellEditorValue() {
+            return panel;
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                boolean isSelected, int row, int column) {
+            panel = (JPanel) value;
+            return panel;
+        }
     }
 
     // ================= FOOTER =================
@@ -475,18 +543,18 @@ public class ParkingSlotPanel extends JPanel {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(new Color(30, 41, 59));
         footer.setBorder(new EmptyBorder(15, 25, 15, 25));
-        
+
         infoLabel = new JLabel();
         infoLabel.setForeground(Color.WHITE);
         infoLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        
+
         timeLabel = new JLabel();
         timeLabel.setForeground(new Color(200, 200, 200));
         timeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        
+
         footer.add(infoLabel, BorderLayout.WEST);
         footer.add(timeLabel, BorderLayout.EAST);
-        
+
         return footer;
     }
 
@@ -503,28 +571,29 @@ public class ParkingSlotPanel extends JPanel {
         try {
             slots = slotDAO.findAll();
             tableModel.setRowCount(0);
-            
+
             for (ParkingSlot s : slots) {
-                tableModel.addRow(new Object[]{
-                    s.getParkingSlotId(),
-                    "Slot #" + s.getParkingSlotNumber(),
-                    statusText(s.getParkingSlotStatus()),
-                    createActionButtons(s)
+                tableModel.addRow(new Object[] {
+                        s.getParkingSlotId(),
+                        "Slot #" + s.getParkingSlotNumber(),
+                        statusText(s.getParkingSlotStatus()),
+                        createActionButtons(s)
                 });
             }
-            
+
             updateFooter();
             updateStatsPanel();
-            
+
         } catch (SQLException e) {
-            showMessage("Database Error", "Failed to load parking slots: " + e.getMessage(), 
-                       "error", OCCUPIED_COLOR);
+            showMessage("Database Error", "Failed to load parking slots: " + e.getMessage(),
+                    "error", OCCUPIED_COLOR);
         }
     }
 
     private void updateFooter() {
-        if (slots == null) return;
-        
+        if (slots == null)
+            return;
+
         long available = slots.stream()
                 .filter(s -> s.getParkingSlotStatus() == ParkingSlot.STATUS_AVAILABLE)
                 .count();
@@ -534,12 +603,12 @@ public class ParkingSlotPanel extends JPanel {
         long occupied = slots.stream()
                 .filter(s -> s.getParkingSlotStatus() == ParkingSlot.STATUS_OCCUPIED)
                 .count();
-        
+
         SimpleDateFormat sdf = new SimpleDateFormat("EEE, MMM dd yyyy | hh:mm:ss a");
         infoLabel.setText("<html>📊 <b>" + slots.size() + "</b> total slots | "
-                         + "✅ <b>" + available + "</b> available | "
-                         + "⏳ <b>" + reserved + "</b> reserved | "
-                         + "🚗 <b>" + occupied + "</b> occupied</html>");
+                + "✅ <b>" + available + "</b> available | "
+                + "⏳ <b>" + reserved + "</b> reserved | "
+                + "🚗 <b>" + occupied + "</b> occupied</html>");
         timeLabel.setText("🕒 " + sdf.format(new Date()));
     }
 
@@ -561,17 +630,17 @@ public class ParkingSlotPanel extends JPanel {
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
         dialog.setResizable(false);
-        
+
         JPanel content = new JPanel(new BorderLayout(20, 20));
         content.setBackground(CARD_BG);
         content.setBorder(new EmptyBorder(30, 30, 30, 30));
-        
+
         // Title
         JLabel title = new JLabel("<html><center><h2 style='margin:0;'>➕ Add New Slot</h2>"
-                                + "<p style='color:#64748B; margin-top:10px;'>Create a new parking slot</p></center></html>",
-                                SwingConstants.CENTER);
+                + "<p style='color:#64748B; margin-top:10px;'>Create a new parking slot</p></center></html>",
+                SwingConstants.CENTER);
         title.setHorizontalAlignment(SwingConstants.CENTER);
-        
+
         // Form
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(CARD_BG);
@@ -579,85 +648,85 @@ public class ParkingSlotPanel extends JPanel {
         gbc.insets = new Insets(15, 10, 15, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
-        
+
         JLabel slotNoLabel = new JLabel("Slot Number:");
         slotNoLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.WEST;
         form.add(slotNoLabel, gbc);
-        
+
         JTextField slotNoField = new JTextField(15);
         slotNoField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         slotNoField.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 1),
-            new EmptyBorder(10, 15, 10, 15)
-        ));
-        gbc.gridx = 1; gbc.gridy = 0;
+                new LineBorder(BORDER_COLOR, 1),
+                new EmptyBorder(10, 15, 10, 15)));
+        gbc.gridx = 1;
+        gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.EAST;
         form.add(slotNoField, gbc);
-        
+
         JLabel statusLabel = new JLabel("Initial Status:");
         statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
         gbc.anchor = GridBagConstraints.WEST;
         form.add(statusLabel, gbc);
-        
-        JComboBox<String> statusCombo = new JComboBox<>(new String[]{"AVAILABLE", "RESERVED", "OCCUPIED"});
+
+        JComboBox<String> statusCombo = new JComboBox<>(new String[] { "AVAILABLE", "RESERVED", "OCCUPIED" });
         statusCombo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         statusCombo.setBackground(CARD_BG);
         statusCombo.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 1),
-            new EmptyBorder(10, 15, 10, 15)
-        ));
-        gbc.gridx = 1; gbc.gridy = 1;
+                new LineBorder(BORDER_COLOR, 1),
+                new EmptyBorder(10, 15, 10, 15)));
+        gbc.gridx = 1;
+        gbc.gridy = 1;
         gbc.anchor = GridBagConstraints.EAST;
         form.add(statusCombo, gbc);
-        
+
         // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
         buttonPanel.setBackground(CARD_BG);
         buttonPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
-        
+
         JButton cancelBtn = new JButton("Cancel");
         cancelBtn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         cancelBtn.setBackground(new Color(241, 245, 249));
         cancelBtn.setForeground(TEXT_PRIMARY);
         cancelBtn.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 1),
-            new EmptyBorder(10, 30, 10, 30)
-        ));
+                new LineBorder(BORDER_COLOR, 1),
+                new EmptyBorder(10, 30, 10, 30)));
         cancelBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         cancelBtn.addActionListener(e -> dialog.dispose());
-        
+
         JButton saveBtn = new JButton("Save Slot");
         saveBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
         saveBtn.setBackground(ADD_BUTTON_COLOR);
         saveBtn.setForeground(Color.WHITE);
         saveBtn.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(ADD_BUTTON_COLOR.darker(), 1),
-            new EmptyBorder(10, 30, 10, 30)
-        ));
+                new LineBorder(ADD_BUTTON_COLOR.darker(), 1),
+                new EmptyBorder(10, 30, 10, 30)));
         saveBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         saveBtn.addActionListener(e -> {
             try {
                 String slotNumberText = slotNoField.getText().trim();
                 if (slotNumberText.isEmpty()) {
-                    JOptionPane.showMessageDialog(dialog, 
-                        "Please enter a slot number", 
-                        "Validation Error", 
-                        JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(dialog,
+                            "Please enter a slot number",
+                            "Validation Error",
+                            JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                
+
                 int slotNumber = Integer.parseInt(slotNumberText);
                 if (slotNumber <= 0) {
-                    JOptionPane.showMessageDialog(dialog, 
-                        "Slot number must be positive", 
-                        "Validation Error", 
-                        JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(dialog,
+                            "Slot number must be positive",
+                            "Validation Error",
+                            JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                
+
                 ParkingSlot slot = new ParkingSlot();
                 slot.setParkingSlotNumber(slotNumber);
                 slot.setParkingSlotStatus(getStatusFromText((String) statusCombo.getSelectedItem()));
@@ -666,31 +735,31 @@ public class ParkingSlotPanel extends JPanel {
                 dialog.dispose();
                 showMessage("Success", "Parking slot added successfully!", "success", ADD_BUTTON_COLOR);
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(dialog, 
-                    "Please enter a valid number for slot number", 
-                    "Validation Error", 
-                    JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog,
+                        "Please enter a valid number for slot number",
+                        "Validation Error",
+                        JOptionPane.ERROR_MESSAGE);
             } catch (SQLException ex) {
-                showMessage("Database Error", "Failed to add slot: " + ex.getMessage(), 
-                           "error", OCCUPIED_COLOR);
+                showMessage("Database Error", "Failed to add slot: " + ex.getMessage(),
+                        "error", OCCUPIED_COLOR);
             } catch (Exception ex) {
-                showMessage("Error", "An unexpected error occurred: " + ex.getMessage(), 
-                           "error", OCCUPIED_COLOR);
+                showMessage("Error", "An unexpected error occurred: " + ex.getMessage(),
+                        "error", OCCUPIED_COLOR);
             }
         });
-        
+
         buttonPanel.add(cancelBtn);
         buttonPanel.add(saveBtn);
-        
+
         content.add(title, BorderLayout.NORTH);
         content.add(form, BorderLayout.CENTER);
         content.add(buttonPanel, BorderLayout.SOUTH);
-        
+
         dialog.add(content);
-        
+
         // Set focus to text field
         SwingUtilities.invokeLater(() -> slotNoField.requestFocusInWindow());
-        
+
         dialog.setVisible(true);
     }
 
@@ -703,16 +772,17 @@ public class ParkingSlotPanel extends JPanel {
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
         dialog.setResizable(false);
-        
+
         JPanel content = new JPanel(new BorderLayout(20, 20));
         content.setBackground(CARD_BG);
         content.setBorder(new EmptyBorder(30, 30, 30, 30));
-        
+
         // Title
-        JLabel title = new JLabel("<html><center><h2 style='margin:0;'>✏️ Edit Slot #" + slot.getParkingSlotNumber() + "</h2>"
-                                + "<p style='color:#64748B; margin-top:10px;'>Modify parking slot details</p></center></html>",
-                                SwingConstants.CENTER);
-        
+        JLabel title = new JLabel(
+                "<html><center><h2 style='margin:0;'>✏️ Edit Slot #" + slot.getParkingSlotNumber() + "</h2>"
+                        + "<p style='color:#64748B; margin-top:10px;'>Modify parking slot details</p></center></html>",
+                SwingConstants.CENTER);
+
         // Form with existing values
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(CARD_BG);
@@ -720,69 +790,69 @@ public class ParkingSlotPanel extends JPanel {
         gbc.insets = new Insets(15, 10, 15, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
-        
+
         // Slot Number (disabled for editing)
         JLabel slotNoLabel = new JLabel("Slot Number:");
         slotNoLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.WEST;
         form.add(slotNoLabel, gbc);
-        
+
         JTextField slotNoField = new JTextField(String.valueOf(slot.getParkingSlotNumber()));
         slotNoField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         slotNoField.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 1),
-            new EmptyBorder(10, 15, 10, 15)
-        ));
+                new LineBorder(BORDER_COLOR, 1),
+                new EmptyBorder(10, 15, 10, 15)));
         slotNoField.setEnabled(false); // Cannot change slot number
         slotNoField.setBackground(new Color(248, 249, 250));
-        gbc.gridx = 1; gbc.gridy = 0;
+        gbc.gridx = 1;
+        gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.EAST;
         form.add(slotNoField, gbc);
-        
+
         // Status
         JLabel statusLabel = new JLabel("Status:");
         statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.gridy = 1;
         gbc.anchor = GridBagConstraints.WEST;
         form.add(statusLabel, gbc);
-        
-        JComboBox<String> statusCombo = new JComboBox<>(new String[]{"AVAILABLE", "RESERVED", "OCCUPIED"});
+
+        JComboBox<String> statusCombo = new JComboBox<>(new String[] { "AVAILABLE", "RESERVED", "OCCUPIED" });
         statusCombo.setSelectedItem(statusText(slot.getParkingSlotStatus()));
         statusCombo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         statusCombo.setBackground(CARD_BG);
         statusCombo.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 1),
-            new EmptyBorder(10, 15, 10, 15)
-        ));
-        gbc.gridx = 1; gbc.gridy = 1;
+                new LineBorder(BORDER_COLOR, 1),
+                new EmptyBorder(10, 15, 10, 15)));
+        gbc.gridx = 1;
+        gbc.gridy = 1;
         gbc.anchor = GridBagConstraints.EAST;
         form.add(statusCombo, gbc);
-        
+
         // Buttons
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
         buttonPanel.setBackground(CARD_BG);
         buttonPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
-        
+
         JButton cancelBtn = new JButton("Cancel");
         cancelBtn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         cancelBtn.setBackground(new Color(241, 245, 249));
         cancelBtn.setForeground(TEXT_PRIMARY);
         cancelBtn.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(BORDER_COLOR, 1),
-            new EmptyBorder(10, 30, 10, 30)
-        ));
+                new LineBorder(BORDER_COLOR, 1),
+                new EmptyBorder(10, 30, 10, 30)));
         cancelBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         cancelBtn.addActionListener(e -> dialog.dispose());
-        
+
         JButton saveBtn = new JButton("Save Changes");
         saveBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
         saveBtn.setBackground(new Color(16, 185, 129));
         saveBtn.setForeground(Color.WHITE);
         saveBtn.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(new Color(16, 185, 129).darker(), 1),
-            new EmptyBorder(10, 30, 10, 30)
-        ));
+                new LineBorder(new Color(16, 185, 129).darker(), 1),
+                new EmptyBorder(10, 30, 10, 30)));
         saveBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         saveBtn.addActionListener(e -> {
             try {
@@ -792,43 +862,43 @@ public class ParkingSlotPanel extends JPanel {
                 dialog.dispose();
                 showMessage("Success", "Parking slot updated successfully!", "success", ADD_BUTTON_COLOR);
             } catch (SQLException ex) {
-                showMessage("Database Error", "Failed to update slot: " + ex.getMessage(), 
-                           "error", OCCUPIED_COLOR);
+                showMessage("Database Error", "Failed to update slot: " + ex.getMessage(),
+                        "error", OCCUPIED_COLOR);
             }
         });
-        
+
         buttonPanel.add(cancelBtn);
         buttonPanel.add(saveBtn);
-        
+
         content.add(title, BorderLayout.NORTH);
         content.add(form, BorderLayout.CENTER);
         content.add(buttonPanel, BorderLayout.SOUTH);
-        
+
         dialog.add(content);
         dialog.setVisible(true);
     }
 
     private void showDeleteDialog(ParkingSlot slot) {
         int confirm = JOptionPane.showConfirmDialog(this,
-            "<html><div style='width:300px;'>"
-            + "<p>Are you sure you want to delete this slot?</p>"
-            + "<p><b>Slot:</b> #" + slot.getParkingSlotNumber() + "</p>"
-            + "<p><b>Status:</b> " + statusText(slot.getParkingSlotStatus()) + "</p>"
-            + "<p style='color:#EF4444; font-weight:bold;'>This action cannot be undone!</p>"
-            + "</div></html>",
-            "Confirm Deletion",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE);
-        
+                "<html><div style='width:300px;'>"
+                        + "<p>Are you sure you want to delete this slot?</p>"
+                        + "<p><b>Slot:</b> #" + slot.getParkingSlotNumber() + "</p>"
+                        + "<p><b>Status:</b> " + statusText(slot.getParkingSlotStatus()) + "</p>"
+                        + "<p style='color:#EF4444; font-weight:bold;'>This action cannot be undone!</p>"
+                        + "</div></html>",
+                "Confirm Deletion",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
         if (confirm == JOptionPane.YES_OPTION) {
             try {
                 slotDAO.delete(slot.getParkingSlotId());
                 loadSlots();
-                showMessage("Success", "Parking slot deleted successfully!", 
-                           "success", ADD_BUTTON_COLOR);
+                showMessage("Success", "Parking slot deleted successfully!",
+                        "success", ADD_BUTTON_COLOR);
             } catch (SQLException e) {
-                showMessage("Error", "Failed to delete slot: " + e.getMessage(), 
-                           "error", OCCUPIED_COLOR);
+                showMessage("Error", "Failed to delete slot: " + e.getMessage(),
+                        "error", OCCUPIED_COLOR);
             }
         }
     }
@@ -850,27 +920,27 @@ public class ParkingSlotPanel extends JPanel {
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
         dialog.setResizable(false);
-        
+
         JPanel content = new JPanel(new BorderLayout(20, 20));
         content.setBackground(Color.WHITE);
         content.setBorder(new EmptyBorder(30, 30, 30, 30));
-        
+
         String icon = switch (type) {
             case "success" -> "✅";
             case "error" -> "❌";
             case "warning" -> "⚠️";
             default -> "ℹ️";
         };
-        
+
         JLabel iconLabel = new JLabel(icon);
         iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 48));
         iconLabel.setForeground(color);
         iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        
+
         JLabel messageLabel = new JLabel("<html><div style='text-align:center;'>" + message + "</div></html>");
         messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         messageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        
+
         JButton okButton = new JButton("OK");
         okButton.setBackground(color);
         okButton.setForeground(Color.WHITE);
@@ -878,16 +948,52 @@ public class ParkingSlotPanel extends JPanel {
         okButton.setFocusPainted(false);
         okButton.setBorder(new EmptyBorder(10, 30, 10, 30));
         okButton.addActionListener(e -> dialog.dispose());
-        
+
         JPanel buttonPanel = new JPanel();
         buttonPanel.setBackground(Color.WHITE);
         buttonPanel.add(okButton);
-        
+
         content.add(iconLabel, BorderLayout.NORTH);
         content.add(messageLabel, BorderLayout.CENTER);
         content.add(buttonPanel, BorderLayout.SOUTH);
-        
+
         dialog.add(content);
         dialog.setVisible(true);
+    }
+
+    // Helper TextIcon class
+    private static class TextIcon implements Icon {
+        private String text;
+        private Font font;
+        private Color color;
+
+        public TextIcon(String text, Font font, Color color) {
+            this.text = text;
+            this.font = font;
+            this.color = color;
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2d.setFont(font);
+            g2d.setColor(color);
+            FontMetrics fm = g2d.getFontMetrics();
+            int textWidth = fm.stringWidth(text);
+            int textHeight = fm.getAscent();
+            g2d.drawString(text, x + (getIconWidth() - textWidth) / 2, y + (getIconHeight() + textHeight) / 2 - 2);
+            g2d.dispose();
+        }
+
+        @Override
+        public int getIconWidth() {
+            return 24;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return 24;
+        }
     }
 }

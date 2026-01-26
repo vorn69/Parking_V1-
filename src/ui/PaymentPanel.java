@@ -74,8 +74,8 @@ public class PaymentPanel extends JPanel {
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         titlePanel.setBackground(CARD_BG);
 
-        JLabel icon = new JLabel("💰");
-        icon.setFont(new Font("Segoe UI", Font.PLAIN, 28));
+        JLabel icon = new JLabel();
+        icon.setIcon(new TextIcon("💰", new Font("Segoe UI Emoji", Font.PLAIN, 28), PRIMARY));
 
         JLabel title = new JLabel("Payment Management");
         title.setFont(new Font("Segoe UI", Font.BOLD, 24));
@@ -89,9 +89,9 @@ public class PaymentPanel extends JPanel {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setBackground(CARD_BG);
 
-        buttonPanel.add(createStyledButton("➕ NEW PAYMENT", SUCCESS, "Create new payment"));
-        buttonPanel.add(createStyledButton("📊 EXPORT", INFO, "Export to Excel"));
-        buttonPanel.add(createStyledButton("🖨️ PRINT", WARNING, "Print report"));
+        buttonPanel.add(createStyledButton("NEW PAYMENT", SUCCESS, "Create new payment", "➕"));
+        buttonPanel.add(createStyledButton("EXPORT", INFO, "Export to Excel", "📊"));
+        buttonPanel.add(createStyledButton("INVOICE", WARNING, "Generate Invoice report", "📄"));
         buttonPanel.add(createRefreshButton());
 
         header.add(buttonPanel, BorderLayout.EAST);
@@ -99,7 +99,7 @@ public class PaymentPanel extends JPanel {
         return header;
     }
 
-    private JButton createStyledButton(String text, Color bgColor, String tooltip) {
+    private JButton createStyledButton(String text, Color bgColor, String tooltip, String iconSymbol) {
         JButton button = new JButton(text);
         button.setBackground(bgColor);
         button.setForeground(Color.WHITE);
@@ -110,6 +110,9 @@ public class PaymentPanel extends JPanel {
                 new LineBorder(bgColor.darker(), 1),
                 new EmptyBorder(10, 15, 10, 15)));
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        button.setIcon(new TextIcon(iconSymbol, new Font("Segoe UI Emoji", Font.PLAIN, 14), Color.WHITE));
+        button.setIconTextGap(8);
 
         button.addMouseListener(new MouseAdapter() {
             @Override
@@ -127,7 +130,7 @@ public class PaymentPanel extends JPanel {
             button.addActionListener(e -> createNewPayment());
         } else if (text.contains("EXPORT")) {
             button.addActionListener(e -> exportPayments());
-        } else if (text.contains("PRINT")) {
+        } else if (text.contains("INVOICE")) {
             button.addActionListener(e -> printReport());
         }
 
@@ -135,7 +138,7 @@ public class PaymentPanel extends JPanel {
     }
 
     private JButton createRefreshButton() {
-        JButton button = new JButton("🔄");
+        JButton button = new JButton();
         button.setBackground(new Color(236, 240, 241));
         button.setForeground(TEXT_PRIMARY);
         button.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -146,8 +149,10 @@ public class PaymentPanel extends JPanel {
                 new EmptyBorder(8, 12, 8, 12)));
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
+        button.setIcon(new TextIcon("🔄", new Font("Segoe UI Emoji", Font.PLAIN, 18), TEXT_PRIMARY));
+
         button.addActionListener(e -> {
-            button.setText("⏳");
+            // button.setText("⏳");
             SwingWorker<Void, Void> worker = new SwingWorker<>() {
                 @Override
                 protected Void doInBackground() throws Exception {
@@ -157,7 +162,7 @@ public class PaymentPanel extends JPanel {
 
                 @Override
                 protected void done() {
-                    button.setText("🔄");
+                    // done
                 }
             };
             worker.execute();
@@ -751,48 +756,53 @@ public class PaymentPanel extends JPanel {
         panel.setBackground(Color.WHITE);
 
         // View button
-        JButton viewBtn = new JButton("👁");
-        viewBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        JButton viewBtn = new JButton();
+        viewBtn.setIcon(new TextIcon("👁", new Font("Segoe UI Emoji", Font.PLAIN, 12), Color.WHITE));
         viewBtn.setToolTipText("View Details");
         viewBtn.setBackground(INFO);
-        viewBtn.setForeground(Color.WHITE);
         viewBtn.setBorder(new EmptyBorder(5, 8, 5, 8));
         viewBtn.addActionListener(e -> viewPaymentDetails(payment));
 
         // Edit button
-        JButton editBtn = new JButton("✏️");
-        editBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        JButton editBtn = new JButton();
+        editBtn.setIcon(new TextIcon("✏️", new Font("Segoe UI Emoji", Font.PLAIN, 12), Color.WHITE));
         editBtn.setToolTipText("Edit Payment");
         editBtn.setBackground(WARNING);
-        editBtn.setForeground(Color.WHITE);
         editBtn.setBorder(new EmptyBorder(5, 8, 5, 8));
         editBtn.addActionListener(e -> editPayment(payment));
+
+        // Invoice button
+        JButton invoiceBtn = new JButton();
+        invoiceBtn.setIcon(new TextIcon("📄", new Font("Segoe UI Emoji", Font.PLAIN, 12), Color.WHITE));
+        invoiceBtn.setToolTipText("Generate Individual Invoice");
+        invoiceBtn.setBackground(new Color(155, 89, 182)); // Purple
+        invoiceBtn.setBorder(new EmptyBorder(5, 8, 5, 8));
+        invoiceBtn.addActionListener(e -> generateIndividualInvoice(payment));
 
         // Mark as paid button (for pending/partial/approved payments)
         if (payment.getPaymentStatus() == Payment.STATUS_PENDING_APPROVAL ||
                 payment.getPaymentStatus() == Payment.STATUS_APPROVED_UNPAID ||
                 payment.getPaymentStatus() == Payment.STATUS_PARTIAL) {
-            JButton payBtn = new JButton("💰");
-            payBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            JButton payBtn = new JButton();
+            payBtn.setIcon(new TextIcon("💰", new Font("Segoe UI Emoji", Font.PLAIN, 12), Color.WHITE));
             payBtn.setToolTipText("Receive Payment");
             payBtn.setBackground(SUCCESS);
-            payBtn.setForeground(Color.WHITE);
             payBtn.setBorder(new EmptyBorder(5, 8, 5, 8));
             payBtn.addActionListener(e -> receivePayment(payment));
             panel.add(payBtn);
         }
 
         // Delete button
-        JButton deleteBtn = new JButton("🗑️");
-        deleteBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        JButton deleteBtn = new JButton();
+        deleteBtn.setIcon(new TextIcon("🗑️", new Font("Segoe UI Emoji", Font.PLAIN, 12), Color.WHITE));
         deleteBtn.setToolTipText("Delete Payment");
         deleteBtn.setBackground(DANGER);
-        deleteBtn.setForeground(Color.WHITE);
         deleteBtn.setBorder(new EmptyBorder(5, 8, 5, 8));
         deleteBtn.addActionListener(e -> deletePayment(payment));
 
         panel.add(viewBtn);
         panel.add(editBtn);
+        panel.add(invoiceBtn);
         panel.add(deleteBtn);
 
         return panel;
@@ -1167,7 +1177,135 @@ public class PaymentPanel extends JPanel {
     }
 
     private void printReport() {
-        showInfo("Print Report", "Print functionality will be implemented soon!");
+        try {
+            boolean complete = table.print(JTable.PrintMode.FIT_WIDTH,
+                    new java.text.MessageFormat("Payment Invoice Report"),
+                    new java.text.MessageFormat("Page {0}"));
+            if (complete) {
+                showSuccess("Invoice Generated", "The invoice has been sent to the printer.");
+            }
+        } catch (java.awt.print.PrinterException e) {
+            showError("Invoice Failed", "Could not generate invoice: " + e.getMessage());
+        }
+    }
+
+    private void generateIndividualInvoice(Payment payment) {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+                "Tax Invoice #" + payment.getPaymentId(), true);
+        dialog.setLayout(new BorderLayout());
+        dialog.setSize(500, 700);
+        dialog.setLocationRelativeTo(this);
+
+        // Professional Invoice HTML
+        String customer = payment.getFullName() != null ? payment.getFullName() : "Valued Customer";
+        String date = payment.getPaymentDate() != null
+                ? new SimpleDateFormat("MMMM dd, yyyy").format(payment.getPaymentDate())
+                : new SimpleDateFormat("MMMM dd, yyyy").format(new Date());
+
+        StringBuilder invoice = new StringBuilder();
+        invoice.append("<html><body style='font-family:Segoe UI, sans-serif; padding:20px;'>")
+                .append("<div style='text-align:right; color:#7f8c8d;'>ORIGINAL INVOICE</div>")
+                .append("<h1 style='color:#2c3e50; margin:0;'>CAR PARKING SYSTEM</h1>")
+                .append("<p style='color:#7f8c8d; margin-top:5px;'>123 Parking Plaza, Downtown<br>Contact: +1 234 567 890</p>")
+                .append("<hr style='border:1px solid #eee;'>")
+                .append("<table width='100%' style='margin-bottom:30px;'><tr>")
+                .append("<td style='vertical-align:top;' width='50%'>")
+                .append("<b style='color:#2980b9;'>BILL TO:</b><br>")
+                .append("<span style='font-size:16px;'>").append(customer).append("</span><br>")
+                .append("Booking Ref: BK-").append(payment.getBookingId()).append("</td>")
+                .append("<td style='text-align:right; vertical-align:top;' width='50%'>")
+                .append("<b style='color:#2980b9;'>INVOICE DETAILS:</b><br>")
+                .append("Invoice No: <b>INV-").append(payment.getPaymentId()).append("</b><br>")
+                .append("Date: ").append(date).append("<br>")
+                .append("Status: <b style='color:").append(payment.isPaid() ? "#27ae60" : "#e67e22").append(";'>")
+                .append(payment.getStatusText()).append("</b></td></tr></table>")
+                .append("<table width='100%' cellpadding='10' style='border-collapse:collapse;'>")
+                .append("<tr style='background:#f9f9f9; border-bottom:2px solid #2980b9;'>")
+                .append("<th style='text-align:left;'>Description</th><th style='text-align:right;'>Amount</th></tr>")
+                .append("<tr><td style='border-bottom:1px solid #eee;'>Parking Reservation Service</td>")
+                .append("<td style='text-align:right; border-bottom:1px solid #eee;'>$")
+                .append(String.format("%.2f", payment.getDueAmount())).append("</td></tr>")
+                .append("</table>")
+                .append("<div style='text-align:right; margin-top:20px; font-size:14px;'>")
+                .append("Subtotal: $").append(String.format("%.2f", payment.getDueAmount())).append("<br>")
+                .append("Paid Amount: <span style='color:#27ae60;'>$")
+                .append(String.format("%.2f", payment.getPaidAmount())).append("</span><br>")
+                .append("<hr align='right' width='150'>")
+                .append("<b style='font-size:20px; color:#2c3e50;'>TOTAL BALANCE: $")
+                .append(String.format("%.2f", payment.getBalance())).append("</b>")
+                .append("</div>")
+                .append("<div style='margin-top:50px; text-align:center; color:#bdc3c7; font-size:12px;'>")
+                .append("Thank you for choosing our service!<br>Electronic Receipt - No signature required")
+                .append("</div></body></html>");
+
+        JEditorPane pane = new JEditorPane("text/html", invoice.toString());
+        pane.setEditable(false);
+        JScrollPane scroll = new JScrollPane(pane);
+        scroll.setBorder(null);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15));
+        btnPanel.setBackground(Color.WHITE);
+
+        JButton printBtn = new JButton("Print Invoice");
+        printBtn.setBackground(PRIMARY);
+        printBtn.setForeground(Color.WHITE);
+        printBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        printBtn.addActionListener(e -> {
+            try {
+                pane.print(new java.text.MessageFormat("Invoice - " + customer),
+                        new java.text.MessageFormat("Page {0}"), true, null, null, true);
+            } catch (Exception ex) {
+                showError("Print Error", ex.getMessage());
+            }
+        });
+
+        JButton closeBtn = new JButton("Close");
+        closeBtn.addActionListener(e -> dialog.dispose());
+
+        btnPanel.add(printBtn);
+        btnPanel.add(closeBtn);
+
+        dialog.add(scroll, BorderLayout.CENTER);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+    }
+
+    // ================= INNER CLASSES =================
+    private static class TextIcon implements Icon {
+        private String text;
+        private Font font;
+        private Color color;
+
+        public TextIcon(String text, Font font, Color color) {
+            this.text = text;
+            this.font = font;
+            this.color = color;
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2d.setFont(font);
+            g2d.setColor(color);
+            FontMetrics fm = g2d.getFontMetrics();
+            int iconWidth = getIconWidth();
+            int iconHeight = getIconHeight();
+            int textWidth = fm.stringWidth(text);
+            int textHeight = fm.getAscent();
+            g2d.drawString(text, x + (iconWidth - textWidth) / 2, y + (iconHeight + textHeight) / 2 - 2);
+            g2d.dispose();
+        }
+
+        @Override
+        public int getIconWidth() {
+            return 24;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return 24;
+        }
     }
 
     // ================= HELPER METHODS =================
