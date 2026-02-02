@@ -338,7 +338,7 @@ public class AdminDashboard extends JFrame {
                 return "✅ APPROVED";
             case Booking.STATUS_REJECTED:
                 return "❌ REJECTED";
-            default:
+            default:    
                 return "❓ UNKNOWN";
         }
     }

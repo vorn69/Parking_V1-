@@ -44,8 +44,8 @@ public class ParkingSlotDAO extends BaseDAO<ParkingSlot> {
         List<ParkingSlot> list = new ArrayList<>();
 
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
                 list.add(mapResultSetToEntity(rs));
@@ -63,7 +63,7 @@ public class ParkingSlotDAO extends BaseDAO<ParkingSlot> {
         """;
 
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setInt(1, slot.getParkingSlotNumber());
             pstmt.setInt(2, slot.getParkingSlotStatus());
@@ -97,7 +97,7 @@ public class ParkingSlotDAO extends BaseDAO<ParkingSlot> {
         """;
 
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setInt(1, slot.getParkingSlotNumber());
             pstmt.setInt(2, slot.getParkingSlotStatus());

@@ -13,7 +13,7 @@ public class BookingDAO extends BaseDAO<Booking> {
         return "inet_vehicleparking.tbl_booking";
     }
 
-    @Override
+    @Override   
     protected String getIdColumnName() {
         return "booking_id";
     }
@@ -51,7 +51,7 @@ public class BookingDAO extends BaseDAO<Booking> {
             ps.setInt(1, bookingId);
             ResultSet rs = ps.executeQuery();
             return rs.next() ? mapResultSetToEntity(rs) : null;
-        }
+        }               
     }
 
     public List<Booking> findByUserId(int userId) throws SQLException {
@@ -270,7 +270,7 @@ public class BookingDAO extends BaseDAO<Booking> {
             if (currentStatus != Booking.STATUS_PENDING) {
                 throw new SQLException("❌ Booking #" + bookingId + " is not PENDING. Current status: " +
                         (currentStatus == 0 ? "PENDING" : currentStatus == 1 ? "APPROVED" : "REJECTED"));
-            }
+            }       
 
             // 3. CHECK SLOT STATUS
             String checkSlotSql = "SELECT parking_slot_status FROM inet_vehicleparking.tbl_parking_slot " +

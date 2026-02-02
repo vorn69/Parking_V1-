@@ -13,7 +13,7 @@ import models.Payment;
 public class TelegramService {
 
     private static final HttpClient httpClient = HttpClient.newBuilder().build();
-
+    
     public static void sendKhmerPaymentNotification(Payment payment) {
         if (!TelegramConfig.isEnabled()) {
             return;

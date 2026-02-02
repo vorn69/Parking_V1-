@@ -4,7 +4,6 @@ import dao.UserDAO;
 import dao.VehicleOwnerDAO;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.geom.RoundRectangle2D;
 import java.sql.SQLException;
 import javax.swing.*;
 import javax.swing.border.*;
@@ -392,7 +391,7 @@ public class LoginFrame extends JFrame {
                 dispose();
             });
         } catch (Exception ex) {
-            ex.printStackTrace();
+            ex.printStackTrace();   
         }
     }
 

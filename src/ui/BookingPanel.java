@@ -16,7 +16,6 @@ import javax.swing.border.*;
 import javax.swing.table.*;
 import models.Booking;
 import models.ParkingSlot;
-import models.User;
 import models.Vehicle;
 import models.VehicleOwner;
 

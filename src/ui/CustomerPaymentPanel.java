@@ -1,18 +1,17 @@
 package ui;
 
 import dao.*;
-import models.*;
-import javax.swing.*;
-import javax.swing.border.*;
-import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.Date;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import javax.swing.*;
+import javax.swing.border.*;
+import javax.swing.table.*;
+import models.*;
 
 public class CustomerPaymentPanel extends JPanel {
 
@@ -523,7 +522,7 @@ public class CustomerPaymentPanel extends JPanel {
                 }
                 if (amount > currentBalance) {
                     int confirm = JOptionPane.showConfirmDialog(this,
-                            String.format("You are paying $%.2f, but the balance is $%.2f.\n" +
+                            String.format("You a    re paying $%.2f, but the balance is $%.2f.\n" +
                                     "The extra amount will be refunded to your account.\n" +
                                     "Continue?", amount, currentBalance),
                             "Overpayment Warning",

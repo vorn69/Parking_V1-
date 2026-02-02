@@ -13,10 +13,10 @@ public class UserDAO extends BaseDAO<User> {
         return "inet_vehicleparking.tbl_user";
     }
     
-    @Override
-    protected String getIdColumnName() {
-        return "user_id";
-    }
+        @Override
+        protected String getIdColumnName() {
+            return "user_id";
+        }
     
     @Override
     protected User mapResultSetToEntity(ResultSet rs) throws SQLException {
@@ -66,7 +66,7 @@ public class UserDAO extends BaseDAO<User> {
                     " WHERE (username = ? OR email = ?) AND password = ? AND status = 1";
         
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, username);
             pstmt.setString(2, username);
